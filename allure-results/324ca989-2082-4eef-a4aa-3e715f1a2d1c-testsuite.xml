@@ -1,0 +1,27 @@
+<?xml version='1.0'?>
+<ns2:test-suite xmlns:ns2='urn:model.allure.qatools.yandex.ru' start='1620199089181' stop='1620199091900'>
+    <name>Factory</name>
+    <title>Factory</title>
+    <test-cases>
+        <test-case start='1620199089182' status='failed' stop='1620199091900'>
+            <name>creates a bulksale</name>
+            <title>creates a bulksale</title>
+            <labels>
+                <label name='severity' value='critical'/>
+                <label name='story' value=''/>
+            </labels>
+            <parameters/>
+            <steps/>
+            <attachments/>
+            <failure>
+                <message>HardhatError: HH700: Artifact for contract "SampleToken" not found.</message>
+                <stack-trace>HardhatError: HH700: Artifact for contract "SampleToken" not found.
+                    at Artifacts._getArtifactPathFromFiles (/Users/0xmotoko/code/bulksale/node_modules/hardhat/src/internal/artifacts.ts:391:13)
+                    at Artifacts._getArtifactPath (/Users/0xmotoko/code/bulksale/node_modules/hardhat/src/internal/artifacts.ts:316:17)
+                    at Artifacts.readArtifact (/Users/0xmotoko/code/bulksale/node_modules/hardhat/src/internal/artifacts.ts:49:26)
+                    at getContractFactoryByName (/Users/0xmotoko/code/bulksale/node_modules/@nomiclabs/hardhat-ethers/src/internal/helpers.ts:100:20)</stack-trace>
+            </failure>
+            <description type='text'></description>
+        </test-case>
+    </test-cases>
+</ns2:test-suite>

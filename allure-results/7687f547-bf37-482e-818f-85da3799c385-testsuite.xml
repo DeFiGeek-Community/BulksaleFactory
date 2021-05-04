@@ -1,0 +1,39 @@
+<?xml version='1.0'?>
+<ns2:test-suite xmlns:ns2='urn:model.allure.qatools.yandex.ru' start='1620199656443' stop='1620199666218'>
+    <name>Factory</name>
+    <title>Factory</title>
+    <test-cases>
+        <test-case start='1620199656443' status='failed' stop='1620199666218'>
+            <name>creates a bulksale</name>
+            <title>creates a bulksale</title>
+            <labels>
+                <label name='severity' value='critical'/>
+                <label name='story' value=''/>
+            </labels>
+            <parameters/>
+            <steps/>
+            <attachments/>
+            <failure>
+                <message>Error: unsupported fragment (argument="value", value="", code=INVALID_ARGUMENT, version=abi/5.1.2)</message>
+                <stack-trace>Error: unsupported fragment (argument="value", value="", code=INVALID_ARGUMENT, version=abi/5.1.2)
+                    at Logger.Object.&lt;anonymous>.Logger.makeError (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/logger/src.ts/index.ts:205:28)
+                    at Logger.Object.&lt;anonymous>.Logger.throwError (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/logger/src.ts/index.ts:217:20)
+                    at Logger.Object.&lt;anonymous>.Logger.throwArgumentError (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/logger/src.ts/index.ts:221:21)
+                    at Function.Object.&lt;anonymous>.Fragment.fromString (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/abi/src.ts/fragments.ts:472:23)
+                    at Function.Object.&lt;anonymous>.Fragment.from (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/abi/src.ts/fragments.ts:432:29)
+                    at /Users/0xmotoko/code/bulksale/node_modules/@ethersproject/abi/src.ts/interface.ts:90:29
+                    at Array.map (&lt;anonymous>)
+                    at new Interface (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/abi/src.ts/interface.ts:89:47)
+                    at Object.&lt;anonymous>.BaseContract.getInterface (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/contracts/src.ts/index.ts:774:16)
+                    at Contract.BaseContract (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/contracts/src.ts/index.ts:621:95)
+                    at new Contract (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/contracts/lib/index.js:1017:42)
+                    at Object.&lt;anonymous> (/Users/0xmotoko/code/bulksale/test/helper.ts:37:24)
+                    at Generator.next (&lt;anonymous>)
+                    at fulfilled (/Users/0xmotoko/code/bulksale/test/helper.ts:5:58)
+                    at processTicksAndRejections (internal/process/task_queues.js:93:5)
+                    at runNextTicks (internal/process/task_queues.js:62:3)</stack-trace>
+            </failure>
+            <description type='text'></description>
+        </test-case>
+    </test-cases>
+</ns2:test-suite>

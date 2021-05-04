@@ -1,0 +1,36 @@
+<?xml version='1.0'?>
+<ns2:test-suite xmlns:ns2='urn:model.allure.qatools.yandex.ru' start='1620201307989' stop='1620201315446'>
+    <name>Factory</name>
+    <title>Factory</title>
+    <test-cases>
+        <test-case start='1620201308001' status='failed' stop='1620201315446'>
+            <name>creates a bulksale</name>
+            <title>creates a bulksale</title>
+            <labels>
+                <label name='severity' value='critical'/>
+                <label name='story' value=''/>
+            </labels>
+            <parameters/>
+            <steps/>
+            <attachments/>
+            <failure>
+                <message>Error: VM Exception while processing transaction: revert You are not the Factory.</message>
+                <stack-trace>Error: VM Exception while processing transaction: revert You are not the Factory.
+                    at BulksaleV1.onlyFactory (contracts/BulksaleV1.sol:63)
+                    at BulksaleV1.initialize (contracts/BulksaleV1.sol:52)
+                    at BulksaleV1.initialize (contracts/BulksaleV1.sol:52)
+                    at &lt;UnrecognizedContract>.&lt;unknown> (0xa16e02e87b7454126e5e10d957a927a7f5b5d2be)
+                    at Factory.deploy (contracts/Factory.sol:51)
+                    at Factory.deploy (contracts/Factory.sol:48)
+                    at processTicksAndRejections (internal/process/task_queues.js:93:5)
+                    at runNextTicks (internal/process/task_queues.js:62:3)
+                    at listOnTimeout (internal/timers.js:523:9)
+                    at processTimers (internal/timers.js:497:7)
+                    at EthModule._estimateGasAction (/Users/0xmotoko/code/bulksale/node_modules/hardhat/src/internal/hardhat-network/provider/modules/eth.ts:421:9)
+                    at HardhatNetworkProvider.request (/Users/0xmotoko/code/bulksale/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:99:18)
+                    at EthersProviderWrapper.send (/Users/0xmotoko/code/bulksale/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)</stack-trace>
+            </failure>
+            <description type='text'></description>
+        </test-case>
+    </test-cases>
+</ns2:test-suite>

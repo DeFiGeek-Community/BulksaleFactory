@@ -1,0 +1,63 @@
+{
+  "name": "@defigeek/bulkale-factory",
+  "version": "1.0.0",
+  "description": "A bulkale framework with the cheap minimal proxy and various tokens.",
+  "main": "scripts/main.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/defigeek/bulkale-factory.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/defigeek/bulkale-factory/issues"
+  },
+  "homepage": "https://github.com/defigeek/bulkale-factory#readme",
+  "dependencies": {
+    "@types/node": "^14.6.4",
+    "allure-mocha": "^2.0.0-beta.9",
+    "child-process-promise": "^2.2.1",
+    "commander": "^7.2.0",
+    "dotenv": "^8.2.0",
+    "npm-which": "^3.0.1",
+    "openzeppelin-solidity": "^4.1.0",
+    "package": "^1.0.1",
+    "tslib": "^2.0.1",
+    "typescript": "^4.0.2"
+  },
+  "devDependencies": {
+    "@ethereum-waffle/jest": "^3.2.2",
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "@nomiclabs/hardhat-web3": "^2.0.0",
+    "@openzeppelin/contracts": "^4.1.0",
+    "@openzeppelin/test-helpers": "^0.5.11",
+    "@testdeck/jest": "^0.1.2",
+    "@testdeck/mocha": "^0.1.2",
+    "@types/jest": "^26.0.22",
+    "allure-js-commons": "2.0.0-beta.7",
+    "allure-mocha": "2.0.0-beta.7",
+    "chai": "^4.3.4",
+    "ethereum-waffle": "^3.3.0",
+    "ethers": "^5.0.1",
+    "hardhat": "^2.1.1",
+    "hardhat-jest-plugin": "0.0.3",
+    "jasmine": "^3.7.0",
+    "jest": "^26.4.2",
+    "jest-allure": "^0.1.3",
+    "ts-jest": "^26.5.5",
+    "ts-node": "^9.1.1",
+    "ts-test-decorators": "0.0.6",
+    "web3": "^1.3.5",
+    "@rollup/plugin-commonjs": "^15.0.0",
+    "@rollup/plugin-json": "^4.1.0",
+    "@rollup/plugin-node-resolve": "^9.0.0",
+    "@rollup/plugin-typescript": "^6.0.0"
+  },
+  "bin": {},
+  "scripts": {
+    "start": "npx rollup -c && node index.js",
+    "test": "npx hardhat compile && jest"
+  },
+  "type": "module"
+}

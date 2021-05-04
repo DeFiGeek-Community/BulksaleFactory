@@ -1,0 +1,31 @@
+<?xml version='1.0'?>
+<ns2:test-suite xmlns:ns2='urn:model.allure.qatools.yandex.ru' start='1620200072762' stop='1620200084716'>
+    <name>Factory</name>
+    <title>Factory</title>
+    <test-cases>
+        <test-case start='1620200072762' status='failed' stop='1620200084715'>
+            <name>creates a bulksale</name>
+            <title>creates a bulksale</title>
+            <labels>
+                <label name='severity' value='critical'/>
+                <label name='story' value=''/>
+            </labels>
+            <parameters/>
+            <steps/>
+            <attachments/>
+            <failure>
+                <message>Error: invalid ENS name (argument="name", value="&lt;SignerWithAddress 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266>", code=INVALID_ARGUMENT, version=providers/5.1.2)</message>
+                <stack-trace>Error: invalid ENS name (argument="name", value="&lt;SignerWithAddress 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266>", code=INVALID_ARGUMENT, version=providers/5.1.2)
+                    at Logger.Object.&lt;anonymous>.Logger.makeError (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/logger/src.ts/index.ts:205:28)
+                    at Logger.Object.&lt;anonymous>.Logger.throwError (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/logger/src.ts/index.ts:217:20)
+                    at Logger.Object.&lt;anonymous>.Logger.throwArgumentError (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/logger/src.ts/index.ts:221:21)
+                    at EthersProviderWrapper.&lt;anonymous> (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/providers/src.ts/base-provider.ts:1435:20)
+                    at step (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/providers/lib/base-provider.js:48:23)
+                    at Object.next (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/providers/lib/base-provider.js:29:53)
+                    at fulfilled (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/providers/lib/base-provider.js:20:58)
+                    at processTicksAndRejections (internal/process/task_queues.js:93:5)</stack-trace>
+            </failure>
+            <description type='text'></description>
+        </test-case>
+    </test-cases>
+</ns2:test-suite>
