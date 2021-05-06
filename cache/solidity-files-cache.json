@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/0xmotoko/code/bulksale/contracts/BulksaleV1.sol": {
-      "lastModificationDate": 1620202760064,
-      "contentHash": "24650ac88b7172c49a630d5b7bd874c4",
+      "lastModificationDate": 1620288537020,
+      "contentHash": "a38b44021eda5445db11c8ee2d555b3b",
       "sourceName": "contracts/BulksaleV1.sol",
       "solcConfig": {
         "version": "0.8.3",
@@ -115,8 +115,8 @@
       ]
     },
     "/Users/0xmotoko/code/bulksale/contracts/ITemplateContract.sol": {
-      "lastModificationDate": 1620192329730,
-      "contentHash": "925312fce7bab1ef1259a0ab1226146c",
+      "lastModificationDate": 1620215849300,
+      "contentHash": "34add78360dd7b1af3dbd3ea7c51f3b1",
       "sourceName": "contracts/ITemplateContract.sol",
       "solcConfig": {
         "version": "0.8.3",
@@ -141,7 +141,9 @@
         }
       },
       "imports": [],
-      "versionPragmas": [],
+      "versionPragmas": [
+        "^0.8.3"
+      ],
       "artifacts": [
         "ITemplateContract"
       ]
@@ -251,7 +253,7 @@
       ]
     },
     "/Users/0xmotoko/code/bulksale/contracts/Factory.sol": {
-      "lastModificationDate": 1620194243984,
+      "lastModificationDate": 1620203286784,
       "contentHash": "5fb15d0316e65123b5faf01ae18c7546",
       "sourceName": "contracts/Factory.sol",
       "solcConfig": {

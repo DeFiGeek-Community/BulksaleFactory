@@ -1,0 +1,39 @@
+<?xml version='1.0'?>
+<ns2:test-suite xmlns:ns2='urn:model.allure.qatools.yandex.ru' start='1620277415231' stop='1620277426495'>
+    <name>Factory</name>
+    <title>Factory</title>
+    <test-cases>
+        <test-case start='1620277415232' status='failed' stop='1620277426495'>
+            <name>creates a bulksale and success to claim</name>
+            <title>creates a bulksale and success to claim</title>
+            <labels>
+                <label name='severity' value='critical'/>
+                <label name='story' value=''/>
+            </labels>
+            <parameters/>
+            <steps/>
+            <attachments/>
+            <failure>
+                <message>Error: too many arguments: passed to contract (count=2, expectedCount=0, code=UNEXPECTED_ARGUMENT, version=contracts/5.1.1)</message>
+                <stack-trace>Error: too many arguments: passed to contract (count=2, expectedCount=0, code=UNEXPECTED_ARGUMENT, version=contracts/5.1.1)
+                    at Logger.Object.&lt;anonymous>.Logger.makeError (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/logger/src.ts/index.ts:205:28)
+                    at Logger.Object.&lt;anonymous>.Logger.throwError (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/logger/src.ts/index.ts:217:20)
+                    at Logger.Object.&lt;anonymous>.Logger.checkArgumentCount (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/logger/src.ts/index.ts:283:18)
+                    at /Users/0xmotoko/code/bulksale/node_modules/@ethersproject/contracts/src.ts/index.ts:165:12
+                    at step (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/contracts/lib/index.js:48:23)
+                    at Object.next (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/contracts/lib/index.js:29:53)
+                    at /Users/0xmotoko/code/bulksale/node_modules/@ethersproject/contracts/lib/index.js:23:71
+                    at new Promise (&lt;anonymous>)
+                    at Object.&lt;anonymous>.__awaiter (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/contracts/lib/index.js:19:12)
+                    at populateTransaction (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/contracts/lib/index.js:139:12)
+                    at Contract.&lt;anonymous> (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/contracts/src.ts/index.ts:351:33)
+                    at step (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/contracts/lib/index.js:48:23)
+                    at Object.next (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/contracts/lib/index.js:29:53)
+                    at /Users/0xmotoko/code/bulksale/node_modules/@ethersproject/contracts/lib/index.js:23:71
+                    at new Promise (&lt;anonymous>)
+                    at Object.&lt;anonymous>.__awaiter (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/contracts/lib/index.js:19:12)</stack-trace>
+            </failure>
+            <description type='text'></description>
+        </test-case>
+    </test-cases>
+</ns2:test-suite>

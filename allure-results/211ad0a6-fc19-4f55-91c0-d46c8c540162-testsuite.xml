@@ -1,0 +1,19 @@
+<?xml version='1.0'?>
+<ns2:test-suite xmlns:ns2='urn:model.allure.qatools.yandex.ru' start='1620281884190' stop='1620281892720'>
+    <name>Factory</name>
+    <title>Factory</title>
+    <test-cases>
+        <test-case start='1620281884191' status='passed' stop='1620281892719'>
+            <name>creates a bulksale and success to claim</name>
+            <title>creates a bulksale and success to claim</title>
+            <labels>
+                <label name='severity' value='critical'/>
+                <label name='story' value=''/>
+            </labels>
+            <parameters/>
+            <steps/>
+            <attachments/>
+            <description type='text'></description>
+        </test-case>
+    </test-cases>
+</ns2:test-suite>

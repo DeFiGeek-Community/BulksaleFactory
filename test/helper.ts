@@ -56,3 +56,9 @@ export function encode(types, values){
 export function decode(types, data) {
   return codec.decode(types, data);  
 } 
+
+export async function increaseTime(skipDuration:number){
+    const [owner] = await getSharedSigners();
+    owner.provider.send("evm_increaseTime", [skipDuration])
+    owner.provider.send("evm_mine")
+}

@@ -1,0 +1,32 @@
+<?xml version='1.0'?>
+<ns2:test-suite xmlns:ns2='urn:model.allure.qatools.yandex.ru' start='1620281722972' stop='1620281730258'>
+    <name>Factory</name>
+    <title>Factory</title>
+    <test-cases>
+        <test-case start='1620281722973' status='failed' stop='1620281730258'>
+            <name>creates a bulksale and success to claim</name>
+            <title>creates a bulksale and success to claim</title>
+            <labels>
+                <label name='severity' value='critical'/>
+                <label name='story' value=''/>
+            </labels>
+            <parameters/>
+            <steps/>
+            <attachments/>
+            <failure>
+                <message>Error: VM Exception while processing transaction: revert The offering has not started yet</message>
+                <stack-trace>Error: VM Exception while processing transaction: revert The offering has not started yet
+                    at BulksaleV1.&lt;receive> (contracts/BulksaleV1.sol:107)
+                    at &lt;UnrecognizedContract>.&lt;unknown> (0xa16e02e87b7454126e5e10d957a927a7f5b5d2be)
+                    at processTicksAndRejections (internal/process/task_queues.js:93:5)
+                    at runNextTicks (internal/process/task_queues.js:62:3)
+                    at listOnTimeout (internal/timers.js:523:9)
+                    at processTimers (internal/timers.js:497:7)
+                    at EthModule._estimateGasAction (/Users/0xmotoko/code/bulksale/node_modules/hardhat/src/internal/hardhat-network/provider/modules/eth.ts:421:9)
+                    at HardhatNetworkProvider.request (/Users/0xmotoko/code/bulksale/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:99:18)
+                    at EthersProviderWrapper.send (/Users/0xmotoko/code/bulksale/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)</stack-trace>
+            </failure>
+            <description type='text'></description>
+        </test-case>
+    </test-cases>
+</ns2:test-suite>

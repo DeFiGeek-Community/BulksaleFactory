@@ -31,9 +31,9 @@ import "./ITemplateContract.sol";
  */
 contract BulksaleV1 is Ownable, ITemplateContract {
     /*
-        ========================================
-        === Template Idiom Declations Begins ===
-        ========================================
+        ==========================================
+        === Template Idiom Declarations Begins ===
+        ==========================================
     */
     bool initialized = false;
 
@@ -51,14 +51,37 @@ contract BulksaleV1 is Ownable, ITemplateContract {
         === DEFINE YOUR OWN ARGS BELOW ===
 
     */
+
+    /* States in the deployment initialization */
+    uint public START = 1620212324;
+    uint public END = START + 7 days;
+    uint public TOTAL_DISTRIBUTE_AMOUNT = 90_360_300e18;
+    uint public MINIMAL_PROVIDE_AMOUNT = 700 ether;
+    uint public LOCK_DURATION = 30 days;
+    uint public EXPIRATION_DURATION = 180 days;
+    IERC20 public ERC20ONSALE;
+    /* States END */
+
     struct Args {
         address token;
+        uint start;
+        uint eventDuration;
+        uint lockDuration;
+        uint expirationDuration;
+        uint totalDistributeAmount;
+        uint minimalProvideAmount;
     }
-    IERC20 public ERC20ONSALE;
     function initialize(bytes memory abiBytes) public onlyOnce onlyFactory override returns (bool) {
         Args memory args = abi.decode(abiBytes, (Args));
         ERC20ONSALE = IERC20(args.token);
+        START = args.start;
+        END = args.start + args.eventDuration;
+        TOTAL_DISTRIBUTE_AMOUNT = args.totalDistributeAmount;
+        MINIMAL_PROVIDE_AMOUNT = args.minimalProvideAmount;
+        LOCK_DURATION = args.lockDuration;
+        EXPIRATION_DURATION = args.expirationDuration;
         emit Initialized(abiBytes);
+        initialized = true;
         return true;
     }
     modifier onlyOnce {
@@ -71,7 +94,7 @@ contract BulksaleV1 is Ownable, ITemplateContract {
     }
     /*
         ========================================
-        === Template Idiom Declations Ends ===
+        === Template Idiom Declarations Ends ===
         ========================================
     */
 
@@ -81,10 +104,6 @@ contract BulksaleV1 is Ownable, ITemplateContract {
     /*
         Let's go core logics :)
     */
-    uint public constant START = 1599678000;
-    uint public constant END = START + 3 days;
-    uint public constant TOTAL_DISTRIBUTE_AMOUNT = 90_360_300e18;
-    uint public constant MINIMAL_PROVIDE_AMOUNT = 700 ether;
     uint public totalProvided = 0;
     mapping(address => uint) public provided;
 
@@ -99,25 +118,33 @@ contract BulksaleV1 is Ownable, ITemplateContract {
         emit Received(msg.sender, msg.value);
     }
 
-    function claim() external /* Original Hegic doesn't have it but take care for Reentrancy if you modify this entire fund flow. */ {
-        console.log('=== Running until here ===');
-        require(block.timestamp > END);
-        require(provided[msg.sender] > 0);
+    function claim(address contributor, address recipient) external /* Original Hegic doesn't have it but take care for Reentrancy if you modify this entire fund flow. */ {
+        require(block.timestamp > END, "Early to claim. Sale is not finished.");
+        require(provided[contributor] > 0, "You don't have any contribution.");
 
-        uint userShare = provided[msg.sender];
-        provided[msg.sender] = 0;
+        uint userShare = provided[contributor];
+        provided[contributor] = 0;
 
-        if(totalProvided >= MINIMAL_PROVIDE_AMOUNT) {
+        if(totalProvided >= MINIMAL_PROVIDE_AMOUNT && block.timestamp < START + EXPIRATION_DURATION) {
             uint tokenAmount = TOTAL_DISTRIBUTE_AMOUNT * (userShare/totalProvided);
-            ERC20ONSALE.transfer(msg.sender, tokenAmount);
-            emit Claimed(msg.sender, userShare, tokenAmount);
+            ERC20ONSALE.transfer(recipient, tokenAmount);
+            emit Claimed(recipient, userShare, tokenAmount);
+        } else if (totalProvided < MINIMAL_PROVIDE_AMOUNT && block.timestamp < START + EXPIRATION_DURATION) {
+            payable(recipient).transfer(userShare);
+            emit Claimed(recipient, userShare, 0);
         } else {
-            payable(msg.sender).transfer(userShare);
-            emit Claimed(msg.sender, userShare, 0);
+            revert("Claimable term has been expired.");
         }
     }
 
     function withdrawProvidedETH() external onlyOwner {
+        /*
+          Finished, and enough Ether provided.
+            
+            Owner: Withdraws Ether
+            Contributors: Can claim and get their own ERC-20
+
+        */
         require(END < block.timestamp, "The offering must be completed");
         require(
             totalProvided >= MINIMAL_PROVIDE_AMOUNT,
@@ -127,6 +154,13 @@ contract BulksaleV1 is Ownable, ITemplateContract {
     }
 
     function withdrawERC20ONSALE() external onlyOwner {
+        /*
+          Finished, but the privided token is not enough.
+            
+            Owner: Withdraws ERC-20
+            Contributors: Claim and get back Ether
+
+        */
         require(END < block.timestamp, "The offering must be completed");
         require(
             totalProvided < MINIMAL_PROVIDE_AMOUNT,
@@ -136,7 +170,14 @@ contract BulksaleV1 is Ownable, ITemplateContract {
     }
 
     function withdrawUnclaimedERC20ONSALE() external onlyOwner {
-        require(END + 30 days < block.timestamp, "Withdrawal unavailable yet");
+        /*
+          Finished, passed lock duration, and still there're unsold ERC-20.
+            
+            Owner: Withdraws ERC-20
+            Contributors: Already claimed and getting their own ERC-20
+
+        */
+        require(END + LOCK_DURATION < block.timestamp, "Withdrawal unavailable yet");
         ERC20ONSALE.transfer(owner(), ERC20ONSALE.balanceOf(address(this)));
     }
 }

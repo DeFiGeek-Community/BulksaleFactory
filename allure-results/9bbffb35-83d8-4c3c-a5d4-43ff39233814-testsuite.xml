@@ -1,0 +1,39 @@
+<?xml version='1.0'?>
+<ns2:test-suite xmlns:ns2='urn:model.allure.qatools.yandex.ru' start='1620280863996' stop='1620280871990'>
+    <name>Factory</name>
+    <title>Factory</title>
+    <test-cases>
+        <test-case start='1620280863997' status='failed' stop='1620280871990'>
+            <name>creates a bulksale and success to claim</name>
+            <title>creates a bulksale and success to claim</title>
+            <labels>
+                <label name='severity' value='critical'/>
+                <label name='story' value=''/>
+            </labels>
+            <parameters/>
+            <steps/>
+            <attachments/>
+            <failure>
+                <message>Error: overflow (fault="overflow", operation="BigNumber.from", value=1e+31, code=NUMERIC_FAULT, version=bignumber/5.1.1)</message>
+                <stack-trace>Error: overflow (fault="overflow", operation="BigNumber.from", value=1e+31, code=NUMERIC_FAULT, version=bignumber/5.1.1)
+                    at Logger.Object.&lt;anonymous>.Logger.makeError (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/logger/src.ts/index.ts:205:28)
+                    at Logger.Object.&lt;anonymous>.Logger.throwError (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/logger/src.ts/index.ts:217:20)
+                    at throwFault (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/bignumber/src.ts/bignumber.ts:358:19)
+                    at Function.Object.&lt;anonymous>.BigNumber.from (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/bignumber/src.ts/bignumber.ts:249:17)
+                    at NumberCoder.Object.&lt;anonymous>.NumberCoder.encode (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/abi/src.ts/coders/number.ts:25:27)
+                    at /Users/0xmotoko/code/bulksale/node_modules/@ethersproject/abi/src.ts/coders/array.ts:71:19
+                    at Array.forEach (&lt;anonymous>)
+                    at Object.pack (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/abi/src.ts/coders/array.ts:54:12)
+                    at TupleCoder.Object.&lt;anonymous>.TupleCoder.encode (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/abi/src.ts/coders/tuple.ts:54:16)
+                    at AbiCoder.Object.&lt;anonymous>.AbiCoder.encode (/Users/0xmotoko/code/bulksale/node_modules/@ethersproject/abi/src.ts/abi-coder.ts:112:15)
+                    at Object.encode (/Users/0xmotoko/code/bulksale/test/helper.ts:65:18)
+                    at Object.&lt;anonymous> (/Users/0xmotoko/code/bulksale/test/index.test.ts:49:46)
+                    at Generator.next (&lt;anonymous>)
+                    at fulfilled (/Users/0xmotoko/code/bulksale/test/index.test.ts:5:58)
+                    at processTicksAndRejections (internal/process/task_queues.js:93:5)
+                    at runNextTicks (internal/process/task_queues.js:62:3)</stack-trace>
+            </failure>
+            <description type='text'></description>
+        </test-case>
+    </test-cases>
+</ns2:test-suite>

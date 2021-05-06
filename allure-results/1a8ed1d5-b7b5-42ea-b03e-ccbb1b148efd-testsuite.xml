@@ -1,0 +1,30 @@
+<?xml version='1.0'?>
+<ns2:test-suite xmlns:ns2='urn:model.allure.qatools.yandex.ru' start='1620283271938' stop='1620283280617'>
+    <name>Factory</name>
+    <title>Factory</title>
+    <test-cases>
+        <test-case start='1620283271939' status='failed' stop='1620283280616'>
+            <name>creates a bulksale and success to claim</name>
+            <title>creates a bulksale and success to claim</title>
+            <labels>
+                <label name='severity' value='critical'/>
+                <label name='story' value=''/>
+            </labels>
+            <parameters/>
+            <steps/>
+            <attachments/>
+            <failure>
+                <message>Error: Expected "0" to be greater than 0</message>
+                <stack-trace>Error: Expected "0" to be greater than 0
+                    at Object.&lt;anonymous> (/Users/0xmotoko/code/bulksale/test/index.test.ts:82:45)
+                    at Generator.next (&lt;anonymous>)
+                    at fulfilled (/Users/0xmotoko/code/bulksale/test/index.test.ts:5:58)
+                    at processTicksAndRejections (internal/process/task_queues.js:93:5)
+                    at runNextTicks (internal/process/task_queues.js:62:3)
+                    at listOnTimeout (internal/timers.js:523:9)
+                    at processTimers (internal/timers.js:497:7)</stack-trace>
+            </failure>
+            <description type='text'></description>
+        </test-case>
+    </test-cases>
+</ns2:test-suite>
