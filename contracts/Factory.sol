@@ -33,24 +33,50 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //solhint-disable max-line-length
 //solhint-disable no-inline-assembly
 
+import "hardhat/console.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./ITemplateContract.sol";
 
-contract Factory {
+contract Factory is ReentrancyGuard {
     mapping(string => address) public templates;
     address public governance;
-    event Deployed(string indexed templateName, address indexed templateAddr, address indexed deployedAddr, bytes abiArgs);
+    event Deployed(address indexed sender, address indexed templateAddr, address indexed deployedAddr, bytes abiArgs);
     event TemplateAdded(string indexed templateName, address indexed templateAddr, address indexed governer);
     event GovernanceChanged(address indexed oldGoverner, address indexed newGoverner);
+    event Received(address indexed sender, uint fee, uint treasury);
+    event Withdrawn(address indexed sender, address governance, uint amount, uint treasuryAfter);
 
     /*
         External Interfaces
     */
-    function deploy(string memory templateName, bytes memory abiArgs) public returns (address deployedAddr) {
+    function deploy(string memory templateName, address tokenAddr, uint sellingAmount, bytes memory abiArgs) public nonReentrant returns (address deployedAddr) {
+        uint _allowance = IERC20(tokenAddr).allowance(msg.sender, address(this));
+
+        /* 1. Args must be non-empty and allowance is enough. */
+        require(bytes(templateName).length > 0, "Empty string.");
+        require(tokenAddr != address(0), "Go with non null address.");
+        require(sellingAmount > 0, "Sell more.");
+        require(_allowance > 0, "Allowance is zero.");
+        require(_allowance >= sellingAmount, "allowance is not enough.");
+
+        /* 2. Make a clone. */
         address templateAddr = templates[templateName];
         deployedAddr = _createClone(templateAddr);
-        bool success = ITemplateContract(deployedAddr).initialize(abiArgs);
-        require(success, "Failed to initialize");
-        emit Deployed(templateName, templateAddr, deployedAddr, abiArgs);
+
+        /* 3. Fund it. */
+        require(
+            IERC20(tokenAddr).transferFrom(msg.sender, deployedAddr, sellingAmount)
+            , "TransferFrom failed.");
+
+
+        /* 4. Initialize it. */
+        require(
+            ITemplateContract(deployedAddr).initialize(abiArgs)
+            , "Failed to initialize the cloned contract.");
+
+        
+        emit Deployed(msg.sender, templateAddr, deployedAddr, abiArgs);
     }
 
     function addTemplate(string memory templateName, address templateAddr /* Dear governer; deploy it beforehand. */) public onlyGovernance {
@@ -63,12 +89,23 @@ contract Factory {
         require(msg.sender == governance, "You're not the governer.");
         _;
     }
-
     constructor(address initialOwner){
         governance = initialOwner;
     }
+    receive() external payable {
+        emit Received(msg.sender, msg.value, address(this).balance);
+    }
+    function withdraw(address to, uint amount) public onlyGovernance nonReentrant {
+        require(to != address(0), "Don't discard treaury!");
+        require(address(this).balance > amount, "Amount is too big");
 
+        (bool success,) = payable(to).call{value:amount}("");
+        require(success,"transfer failed");
+
+        emit Withdrawn(msg.sender, governance, amount, address(this).balance);
+    }
     function setGovernance(address newGoverner) public onlyGovernance {
+        require(newGoverner != address(0), "governer cannot be null");
         emit GovernanceChanged(governance, newGoverner);
         governance = newGoverner;
     }

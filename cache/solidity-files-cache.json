@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/0xmotoko/code/bulksale/contracts/BulksaleV1.sol": {
-      "lastModificationDate": 1620288537020,
-      "contentHash": "a38b44021eda5445db11c8ee2d555b3b",
+      "lastModificationDate": 1620324228963,
+      "contentHash": "61a65f98a3a747fb1052a18ff0144975",
       "sourceName": "contracts/BulksaleV1.sol",
       "solcConfig": {
         "version": "0.8.3",
@@ -30,7 +30,7 @@
       "imports": [
         "hardhat/console.sol",
         "@openzeppelin/contracts/token/ERC20/ERC20.sol",
-        "@openzeppelin/contracts/access/Ownable.sol",
+        "@openzeppelin/contracts/security/ReentrancyGuard.sol",
         "./ITemplateContract.sol"
       ],
       "versionPragmas": [
@@ -253,8 +253,8 @@
       ]
     },
     "/Users/0xmotoko/code/bulksale/contracts/Factory.sol": {
-      "lastModificationDate": 1620203286784,
-      "contentHash": "5fb15d0316e65123b5faf01ae18c7546",
+      "lastModificationDate": 1620325274036,
+      "contentHash": "79e4c1784b17cac452137f63f127733d",
       "sourceName": "contracts/Factory.sol",
       "solcConfig": {
         "version": "0.8.3",
@@ -279,6 +279,9 @@
         }
       },
       "imports": [
+        "hardhat/console.sol",
+        "@openzeppelin/contracts/token/ERC20/ERC20.sol",
+        "@openzeppelin/contracts/security/ReentrancyGuard.sol",
         "./ITemplateContract.sol"
       ],
       "versionPragmas": [
@@ -289,8 +292,8 @@
       ]
     },
     "/Users/0xmotoko/code/bulksale/contracts/SampleToken.sol": {
-      "lastModificationDate": 1620199387992,
-      "contentHash": "349ed96d046b6515a7981b40a86ebaef",
+      "lastModificationDate": 1620301836443,
+      "contentHash": "7f6c048ecaa2d805af5e605a370a344c",
       "sourceName": "contracts/SampleToken.sol",
       "solcConfig": {
         "version": "0.8.3",
@@ -315,6 +318,7 @@
         }
       },
       "imports": [
+        "hardhat/console.sol",
         "@openzeppelin/contracts/token/ERC20/ERC20.sol"
       ],
       "versionPragmas": [
@@ -356,6 +360,40 @@
       ],
       "artifacts": [
         "console"
+      ]
+    },
+    "/Users/0xmotoko/code/bulksale/node_modules/@openzeppelin/contracts/security/ReentrancyGuard.sol": {
+      "lastModificationDate": 1620191219267,
+      "contentHash": "1d45ab4bd9b10c657bd26a957be5bcd9",
+      "sourceName": "@openzeppelin/contracts/security/ReentrancyGuard.sol",
+      "solcConfig": {
+        "version": "0.8.3",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "ReentrancyGuard"
       ]
     }
   }

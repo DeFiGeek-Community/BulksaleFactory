@@ -21,7 +21,7 @@ pragma solidity ^0.8.3;
 
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./ITemplateContract.sol";
 
 /**
@@ -29,7 +29,7 @@ import "./ITemplateContract.sol";
  * @title BulksaleV1
  * @notice Minimal Proxy Platform-ish fork of the HegicInitialOffering.sol
  */
-contract BulksaleV1 is Ownable, ITemplateContract {
+contract BulksaleV1 is ITemplateContract, ReentrancyGuard {
     /*
         ==========================================
         === Template Idiom Declarations Begins ===
@@ -59,6 +59,8 @@ contract BulksaleV1 is Ownable, ITemplateContract {
     uint public MINIMAL_PROVIDE_AMOUNT = 700 ether;
     uint public LOCK_DURATION = 30 days;
     uint public EXPIRATION_DURATION = 180 days;
+    address public owner;
+    uint public FEERATEPERMIL = 30;
     IERC20 public ERC20ONSALE;
     /* States END */
 
@@ -70,9 +72,21 @@ contract BulksaleV1 is Ownable, ITemplateContract {
         uint expirationDuration;
         uint totalDistributeAmount;
         uint minimalProvideAmount;
+        address owner;
+        uint feeRatePerMil;
     }
     function initialize(bytes memory abiBytes) public onlyOnce onlyFactory override returns (bool) {
         Args memory args = abi.decode(abiBytes, (Args));
+
+        require(block.timestamp <= args.start, "start must be in the future");
+        require(args.eventDuration >= 1 days, "event duration is too short");
+        require(args.totalDistributeAmount > 0, "distribution amount is invalid");
+        require(args.minimalProvideAmount > 0, "minimal provide amount is invalid");
+        require(args.lockDuration >= 0, "lock duration is invalid");
+        require(args.expirationDuration >= 30 days, "expiration duration must be more than 30 days");
+        require(args.owner != address(0), "owner must be there");
+        require(1 <= args.feeRatePerMil && args.feeRatePerMil < 100, "fee rate is out of range");
+
         ERC20ONSALE = IERC20(args.token);
         START = args.start;
         END = args.start + args.eventDuration;
@@ -80,6 +94,8 @@ contract BulksaleV1 is Ownable, ITemplateContract {
         MINIMAL_PROVIDE_AMOUNT = args.minimalProvideAmount;
         LOCK_DURATION = args.lockDuration;
         EXPIRATION_DURATION = args.expirationDuration;
+        owner = args.owner;
+        FEERATEPERMIL = args.feeRatePerMil;
         emit Initialized(abiBytes);
         initialized = true;
         return true;
@@ -90,6 +106,10 @@ contract BulksaleV1 is Ownable, ITemplateContract {
     }
     modifier onlyFactory {
         require(msg.sender == factory, "You are not the Factory.");
+        _;
+    }
+    modifier onlyOwner() {
+        require(msg.sender == owner, "You are not the owner.");
         _;
     }
     /*
@@ -118,7 +138,7 @@ contract BulksaleV1 is Ownable, ITemplateContract {
         emit Received(msg.sender, msg.value);
     }
 
-    function claim(address contributor, address recipient) external /* Original Hegic doesn't have it but take care for Reentrancy if you modify this entire fund flow. */ {
+    function claim(address contributor, address recipient) external nonReentrant {
         require(block.timestamp > END, "Early to claim. Sale is not finished.");
         require(provided[contributor] > 0, "You don't have any contribution.");
 
@@ -126,18 +146,32 @@ contract BulksaleV1 is Ownable, ITemplateContract {
         provided[contributor] = 0;
 
         if(totalProvided >= MINIMAL_PROVIDE_AMOUNT && block.timestamp < START + EXPIRATION_DURATION) {
-            uint tokenAmount = TOTAL_DISTRIBUTE_AMOUNT * (userShare/totalProvided);
-            ERC20ONSALE.transfer(recipient, tokenAmount);
-            emit Claimed(recipient, userShare, tokenAmount);
+            uint tokenAmount =  TOTAL_DISTRIBUTE_AMOUNT*userShare/totalProvided;
+            require(tokenAmount>0, "Share calculation is buggy");
+            if( 
+                /* claiming for oneself */
+                (msg.sender == contributor && contributor == recipient)
+                ||                
+                /* claiming for someone other */
+                (msg.sender != contributor && contributor == recipient)
+                ||
+                /* giving her contribution to someone other by her own will */
+                (msg.sender == contributor && contributor != recipient) ){
+                ERC20ONSALE.transfer(recipient, tokenAmount);
+                emit Claimed(recipient, userShare, tokenAmount);
+            } else {
+                revert("sender is claiming someone other's fund for someone other.");
+            }
         } else if (totalProvided < MINIMAL_PROVIDE_AMOUNT && block.timestamp < START + EXPIRATION_DURATION) {
-            payable(recipient).transfer(userShare);
+            (bool success,) = payable(recipient).call{value:userShare}("");
+            require(success,"transfer failed");
             emit Claimed(recipient, userShare, 0);
         } else {
             revert("Claimable term has been expired.");
         }
     }
 
-    function withdrawProvidedETH() external onlyOwner {
+    function withdrawProvidedETH() external onlyOwner nonReentrant {
         /*
           Finished, and enough Ether provided.
             
@@ -150,10 +184,14 @@ contract BulksaleV1 is Ownable, ITemplateContract {
             totalProvided >= MINIMAL_PROVIDE_AMOUNT,
             "The required amount has not been provided!"
         );
-        payable(owner()).transfer(address(this).balance);
+
+        (bool success1,) = payable(owner).call{value: address(this).balance*(1000-FEERATEPERMIL)/1000}("");
+        require(success1,"transfer failed");
+        (bool success2,) = payable(factory).call{value: address(this).balance*FEERATEPERMIL/1000, gas: 25000}("");
+        require(success2,"transfer failed");
     }
 
-    function withdrawERC20ONSALE() external onlyOwner {
+    function withdrawERC20ONSALE() external onlyOwner nonReentrant {
         /*
           Finished, but the privided token is not enough.
             
@@ -166,10 +204,10 @@ contract BulksaleV1 is Ownable, ITemplateContract {
             totalProvided < MINIMAL_PROVIDE_AMOUNT,
             "The required amount has been provided!"
         );
-        ERC20ONSALE.transfer(owner(), ERC20ONSALE.balanceOf(address(this)));
+        ERC20ONSALE.transfer(owner, ERC20ONSALE.balanceOf(address(this)));
     }
 
-    function withdrawUnclaimedERC20ONSALE() external onlyOwner {
+    function withdrawUnclaimedERC20ONSALE() external onlyOwner nonReentrant {
         /*
           Finished, passed lock duration, and still there're unsold ERC-20.
             
@@ -178,6 +216,6 @@ contract BulksaleV1 is Ownable, ITemplateContract {
 
         */
         require(END + LOCK_DURATION < block.timestamp, "Withdrawal unavailable yet");
-        ERC20ONSALE.transfer(owner(), ERC20ONSALE.balanceOf(address(this)));
+        ERC20ONSALE.transfer(owner, ERC20ONSALE.balanceOf(address(this)));
     }
 }
