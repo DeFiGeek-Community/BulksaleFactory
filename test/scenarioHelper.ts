@@ -3,7 +3,7 @@ import { BigNumber } from "ethers";
 import { summon, getSharedProvider, getSharedSigners, 
   parseAddr, parseBool, parseInteger, getLogs,
   encode, decode, increaseTime } from "./helper";
-
+import * as S from './parameterizedSpecs';
 
 
 
@@ -20,6 +20,8 @@ export function getAbiArgs(templateName, {
 }){
     let types;
     if(templateName == 'Bulksale_DefiGeek_20210505'){
+        types = ["address", "uint", "uint", "uint", "uint", "uint", "uint", 'address', 'uint'];
+    } else if(templateName == 'FooDAO_Tokensale') {
         types = ["address", "uint", "uint", "uint", "uint", "uint", "uint", 'address', 'uint'];
     } else {
         throw new Error(`${templateName} is not planned yet. Add your typedef for abi here.`);
@@ -44,4 +46,11 @@ export async function sendEther(to:any, amountStr:string, signer){
         to: to,
         value: ethers.utils.parseEther(amountStr)
     })).wait();
+}
+
+export function parameterizedSpecs(){
+    let ctx = S.successWithModerateSetting();
+    ctx = S.successWithModerateSetting2(ctx);
+
+    return ctx;
 }

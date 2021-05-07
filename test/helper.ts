@@ -72,6 +72,7 @@ export class BalanceLogger{
   TokensObj: any;
   signersObj: any;
   provider: any;
+  list: Array<any>;
   constructor(_TokensObj, _signersObj, _provider){
     /*
       new Logger({SampleToken1, SampleToken2}, {owner,alice,bob,PoolContract});
@@ -79,23 +80,85 @@ export class BalanceLogger{
     this.TokensObj = _TokensObj;
     this.signersObj = _signersObj;
     this.provider = _provider;
+    this.list = [];
+  }
+  async log(){
+    this.list.push(await this.getBalances());
+  }
+  diff(person:string, token:string): BigNumber{
+    let newBal: BigNumber = this.list[this.list.length-1][person][token];
+    let oldBal: BigNumber = this.list[0][person][token];
+    return newBal.sub(oldBal);
+  }
+  diffStr(person:string, token:string): string{
+    if(this.list.length < 2) return "-";
+    return toFloat(this.diff(person, token).toString());
+  }
+  ltAbsOneBN(bn:BigNumber|string){
+    let isNumber:boolean=false, num:number;
+    let isBigNumber:boolean = ethers.BigNumber.isBigNumber(bn);
+    const maxStr = `${Number.MAX_SAFE_INTEGER}`;
+
+    if(!isBigNumber && (<string>bn).length >= maxStr.length) {
+      return false;
+    } else if ((<string>bn).length == maxStr.length && (<string>bn).slice(0,1) == maxStr.slice(0,1)) {
+      return false
+    }
+    if(isBigNumber){
+      try {
+        isNumber =
+          (<BigNumber>bn).gt(-1*(Number.MAX_SAFE_INTEGER-1))
+          &&
+          (<BigNumber>bn).lt(Number.MAX_SAFE_INTEGER-1);
+      } catch (e) {
+        console.error(e.message);
+      }
+
+      try {
+        num = (<BigNumber>bn).toNumber();
+      } catch (e) {
+        return false;
+      }
+
+    } else {
+      isNumber = true;
+      num = parseInt(<string>bn);
+    }
+
+    if(isNumber) {
+      return -1 < num && num < 1;
+    } else {
+      return false;
+    }
   }
   async dump(){
     let arr1 = await Promise.all(
       Object.keys(this.signersObj).map(async username=>{
+        const un:string = username.padEnd(10, ' ');
         let arr2 = await Promise.all(
           Object.keys(this.TokensObj).map(async tokenName=>{
-            return `${tokenName}:${toFloat( (await this.TokensObj[tokenName].balanceOf(this.signersObj[username].address)).toString() )}`
+            const tn:string = tokenName.padEnd(10, ' ');
+            const val:string = toFloat( (await this.TokensObj[tokenName].balanceOf(this.signersObj[username].address)).toString() ).padEnd(30, ' ');
+            return `${tn}:${val}`
           })
         );
         if(username.match(/^[A-Z][a-zA-Z0-9]+/)){
           /* contract balance */
           let Contract = this.signersObj[username];
-          arr2.unshift(`${username}: eth:${toFloat((await Contract.provider.getBalance(Contract.address)).toString() )}`);
+          const val = toFloat((await Contract.provider.getBalance(Contract.address)).toString() ).padEnd(14, ' ');
+          arr2.unshift(`${un}: eth:${val}`);
         } else {
           /* EOA balance */
-          arr2.unshift(`${username}: eth:${toFloat((await this.signersObj[username].getBalance()).toString() )}`);
+          const val = toFloat((await this.signersObj[username].getBalance()).toString() ).padEnd(14, ' ');
+          arr2.unshift(`${un}: eth:${val}`);
         }
+        const _val = this.diffStr(username, 'eth').padEnd(14, ' ');
+        arr2.push(`diff::eth ${_val}`);
+        Object.keys(this.TokensObj).map(async tokenName=>{
+          const tn:string = tokenName.padEnd(10, ' ');
+          const val = this.diffStr(username, tokenName).padEnd(14, ' ');
+          arr2.push(`diff::${tn} ${val}`);
+        })
         return arr2.join(" ");
       })
     );
