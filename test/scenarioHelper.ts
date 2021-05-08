@@ -3,7 +3,7 @@ import { BigNumber } from "ethers";
 import { summon, getSharedProvider, getSharedSigners, 
   parseAddr, parseBool, parseInteger, getLogs,
   encode, decode, increaseTime } from "./helper";
-import * as S from './parameterizedSpecs';
+import * as specs from './parameterizedSpecs';
 
 
 
@@ -17,14 +17,25 @@ export function getAbiArgs(templateName, {
     minEtherTarget,
     owner,
     feeRatePerMil
+}:{
+    token: string,
+    start: number/* unixtime in sec (not milisec) */,
+    eventDuration: number /* in sec */,
+    lockDuration: number /* in sec */,
+    expirationDuration: number /* in sec */,
+    sellingAmount: BigNumber,
+    minEtherTarget: BigNumber,
+    owner: string,
+    feeRatePerMil: number
 }){
     let types;
-    if(templateName == 'Bulksale_DefiGeek_20210505'){
+    if(templateName == 'BulksaleV1.sol'){
         types = ["address", "uint", "uint", "uint", "uint", "uint", "uint", 'address', 'uint'];
-    } else if(templateName == 'FooDAO_Tokensale') {
+    } else if(templateName == 'BulksaleV2.sol') {
         types = ["address", "uint", "uint", "uint", "uint", "uint", "uint", 'address', 'uint'];
     } else {
-        throw new Error(`${templateName} is not planned yet. Add your typedef for abi here.`);
+        console.trace(`${templateName} is not planned yet. Add your typedef for abi here.`);
+        throw 1;
     }
     if( feeRatePerMil < 1 || 100 <= feeRatePerMil ) throw new Error("feeRatePerMil is out of range.");
 
@@ -48,9 +59,9 @@ export async function sendEther(to:any, amountStr:string, signer){
     })).wait();
 }
 
+let ctx;
 export function parameterizedSpecs(){
-    let ctx = S.successWithModerateSetting();
-    ctx = S.successWithModerateSetting2(ctx);
-
+    ctx = specs.successWithModerateSetting();
+    Object.keys(specs).map(specName=> ctx = specs[specName](ctx) );
     return ctx;
 }

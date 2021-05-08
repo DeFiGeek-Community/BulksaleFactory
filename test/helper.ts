@@ -87,7 +87,8 @@ export class BalanceLogger{
   signersObj: any;
   provider: any;
   list: Array<any>;
-  constructor(_TokensObj, _signersObj, _provider){
+  nickname: string;
+  constructor(_TokensObj, _signersObj, _provider, _nickname){
     /*
       new Logger({SampleToken1, SampleToken2}, {owner,alice,bob,PoolContract});
     */
@@ -95,6 +96,7 @@ export class BalanceLogger{
     this.signersObj = _signersObj;
     this.provider = _provider;
     this.list = [];
+    this.nickname = _nickname;
   }
   async log(){
     this.list.push(await this.getBalances());
@@ -180,7 +182,12 @@ export class BalanceLogger{
         return arr2.join(" ");
       })
     );
-    console.log(arr1.join("\n"));
+    let initialUser = Object.keys(this.signersObj)[0];
+    let isPre = this.diffStr(initialUser, 'eth') === '-';
+    let header = `\n[${this.nickname}] - ${isPre?'pre':'post'}\n`;
+    arr1.unshift(header);
+    let body = arr1.join("\n");
+    console.log(body);
   }
   async getBalances(){
     let obj = {};

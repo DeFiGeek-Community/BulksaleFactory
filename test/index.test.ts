@@ -19,6 +19,7 @@ const FACTORY_ABI = [
     'function deploy(string, address, uint, bytes)',
     'function addTemplate(string, address)',
     'function withdraw(address, uint)',
+    'function templates(string) view returns (address)',
     'event Deployed(address indexed, address indexed, address indexed, bytes);'
 ];
 const SampleToken_ABI = [
@@ -53,13 +54,16 @@ describe("Factory", function() {
             const [foundation,deployer,alice,bob,carl,david,eve,fin,george] = await getSharedSigners();
             const TOTAL_ISSUANCE:BigNumber = toERC20($p.totalIssuance);
             const SELLING_AMOUNT:BigNumber = toERC20($p.sellingAmount);
+            const MIN_ETHER_TARGET:BigNumber = toERC20($p.minEtherTarget);
 
+            /* `summon()`: Singleton contracts. */
             const Factory = await summon("Factory", FACTORY_ABI, [foundation.address], foundation);
-            const SampleToken = await summon("SampleToken", SampleToken_ABI, [TOTAL_ISSUANCE], deployer);
+            /* `create()`: New token, every time. */
+            const SampleToken = await create("SampleToken", SampleToken_ABI, [TOTAL_ISSUANCE], deployer);
             const BulksaleV1 = await summon("BulksaleV1", BULKSALEV1_ABI, [], foundation);
             if (!provider) provider = getSharedProvider();
 
-            const bl = new BalanceLogger({SampleToken}, {foundation,Factory,deployer,BulksaleV1,alice,bob,carl,david,eve,fin,george}, provider);
+            const bl = new BalanceLogger({SampleToken}, {foundation,Factory,deployer,BulksaleV1,alice,bob,carl,david,eve,fin,george}, provider, `${templateName}:${i}`);
 
             await bl.log();
             await bl.dump();
@@ -75,13 +79,15 @@ describe("Factory", function() {
                 lockDuration: $p.lockDuration,
                 expirationDuration: $p.expirationDuration,
                 sellingAmount: SELLING_AMOUNT,
-                minEtherTarget:$p.minEtherTarget,
+                minEtherTarget: MIN_ETHER_TARGET,
                 owner: deployer.address,
                 feeRatePerMil: $p.feeRatePerMil
             });
 
             /* Deployment begins */
-            await ( await Factory.connect(foundation).addTemplate(templateName, bulksaleAddr) ).wait();
+            if( await Factory.templates(templateName) === "0x0000000000000000000000000000000000000000" ) {
+                await ( await Factory.connect(foundation).addTemplate(templateName, bulksaleAddr) ).wait();
+            }
             await ( await SampleToken.connect(deployer).approve(Factory.address, SELLING_AMOUNT) ).wait();
             await ( await Factory.connect(deployer).deploy(templateName, tokenAddr, SELLING_AMOUNT, argsTokenOnSale) ).wait();
             /* Deployment ended */
@@ -148,7 +154,7 @@ describe("BalanceLogger", function(){
     describe(".ltAbsOneBN()", function(){
         let bl;
         beforeAll(()=>{
-            bl = new BalanceLogger({}, {}, getSharedProvider());
+            bl = new BalanceLogger({}, {}, getSharedProvider(), 'foo');
         })
         it("checks 1", ()=> expect( bl.ltAbsOneBN("1") ).toBe(false) )
         it("checks -1", ()=> expect( bl.ltAbsOneBN("-1") ).toBe(false) )
