@@ -122,16 +122,16 @@ describe("Factory", function() {
                 Finalize each own result
             */
             /* Simply for themselves */
-            await (await BulksaleClone.connect(alice).claim(alice.address, alice.address)).wait();
-            await (await BulksaleClone.connect(bob).claim(bob.address, bob.address)).wait();
-            await (await BulksaleClone.connect(carl).claim(carl.address, carl.address)).wait();
-            await (await BulksaleClone.connect(david).claim(david.address, david.address)).wait();
+                await (await BulksaleClone.connect(alice).claim(alice.address, alice.address)).wait();
+                await (await BulksaleClone.connect(bob).claim(bob.address, bob.address)).wait();
+                await (await BulksaleClone.connect(carl).claim(carl.address, carl.address)).wait();
+                await (await BulksaleClone.connect(david).claim(david.address, david.address)).wait();
 
-            /* alice claims for gas-less-eve */
-            await (await BulksaleClone.connect(alice).claim(eve.address, eve.address)).wait();
+                /* alice claims for gas-less-eve */
+                await (await BulksaleClone.connect(alice).claim(eve.address, eve.address)).wait();
 
-            /* fin gives his contribution to gas-less-george */
-            await (await BulksaleClone.connect(fin).claim(fin.address, george.address)).wait();
+                /* fin gives his contribution to gas-less-george */
+                await (await BulksaleClone.connect(fin).claim(fin.address, george.address)).wait();
 
             /* withdraw the raised fund */
             await (await BulksaleClone.connect(deployer).withdrawProvidedETH()).wait();
@@ -172,5 +172,7 @@ describe("BalanceLogger", function(){
         it("checks 300000000532312999532312999", ()=> expect( bl.ltAbsOneBN("300000000532312999532312999") ).toBe(false) )
         it("checks 18159105037311609774740371", ()=> expect( bl.ltAbsOneBN("18159105037311609774740371") ).toBe(false) )
         it("checks -18159105037311609774740371.000000000000001", ()=> expect( bl.ltAbsOneBN("-18159105037311609774740371.000000000000001") ).toBe(false) )
+        it("checks 115,792,089,237,316,195,423,570,985,008,687,907,853,269,984,‌​665,640,564,039,457", ()=> expect( bl.ltAbsOneBN("115,792,089,237,316,195,423,570,985,008,687,907,853,269,984,‌​665,640,564,039,457".replace(/,/,'')) ).toBe(false) )
+        
     });
 });

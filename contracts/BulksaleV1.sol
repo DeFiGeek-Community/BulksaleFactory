@@ -127,7 +127,7 @@ contract BulksaleV1 is ITemplateContract, ReentrancyGuard {
     uint public totalProvided = 0;
     mapping(address => uint) public provided;
 
-    event Claimed(address indexed account, uint userShare, uint tokenAmount);
+    event Claimed(address indexed account, uint userShare, uint erc20allocation);
     event Received(address indexed account, uint amount);
 
     receive() external payable {
@@ -145,9 +145,13 @@ contract BulksaleV1 is ITemplateContract, ReentrancyGuard {
         uint userShare = provided[contributor];
         provided[contributor] = 0;
 
-        if(totalProvided >= MINIMAL_PROVIDE_AMOUNT && block.timestamp < START + EXPIRATION_DURATION) {
-            uint tokenAmount =  TOTAL_DISTRIBUTE_AMOUNT*userShare/totalProvided;
-            require(tokenAmount>0, "Share calculation is buggy");
+        uint erc20allocation = _calculateAllocation(userShare, totalProvided, TOTAL_DISTRIBUTE_AMOUNT);
+        bool isNotExpiredYet = block.timestamp < START + EXPIRATION_DURATION;
+        bool isTargetReached = totalProvided >= MINIMAL_PROVIDE_AMOUNT;
+        bool allocationNearlyZero = erc20allocation == 0;
+        if(
+            isNotExpiredYet && isTargetReached && !allocationNearlyZero
+        ) {
             if( 
                 /* claiming for oneself */
                 (msg.sender == contributor && contributor == recipient)
@@ -157,18 +161,43 @@ contract BulksaleV1 is ITemplateContract, ReentrancyGuard {
                 ||
                 /* giving her contribution to someone other by her own will */
                 (msg.sender == contributor && contributor != recipient) ){
-                ERC20ONSALE.transfer(recipient, tokenAmount);
-                emit Claimed(recipient, userShare, tokenAmount);
+                ERC20ONSALE.transfer(recipient, erc20allocation);
+                emit Claimed(recipient, userShare, erc20allocation);
             } else {
                 revert("sender is claiming someone other's fund for someone other.");
             }
-        } else if (totalProvided < MINIMAL_PROVIDE_AMOUNT && block.timestamp < START + EXPIRATION_DURATION) {
-            (bool success,) = payable(recipient).call{value:userShare}("");
-            require(success,"transfer failed");
-            emit Claimed(recipient, userShare, 0);
+        } else if (
+            (isNotExpiredYet && !isTargetReached)
+            ||
+            (isNotExpiredYet && allocationNearlyZero)
+        ) {
+            /* Refund process */
+            (bool success,) = payable(contributor).call{value:userShare}("");
+            require(success, "transfer failed");
+            emit Claimed(contributor, userShare, 0);
         } else {
+            /* Expired. No refund. */
             revert("Claimable term has been expired.");
         }
+    }
+    function _calculateAllocation(uint us, uint tp, uint tda) internal returns (uint al){
+        /* us<tp is always true and so us/tp is always zero */
+        /* tda can be 1 to (2^256-1)/10^18 */
+        /* (us x tda) can overflow */
+        /* tda/tp can be zero */
+
+        if(tda<tp) {
+        /* 
+        For a sale such that accumulates many ETH, and selling token is a few (e.g., Art NFTs),
+        if the claimer depoited only a few ETH, then allocation is 0 and will be refunded.
+        That would be acceptable behavior.
+        */
+            al = (us*tda)/tp;
+        } else {
+        /* sender's share is very tiny and so calculate tda/tp first */
+            al = (tda/tp)*us;
+        }
+
     }
 
     function withdrawProvidedETH() external onlyOwner nonReentrant {

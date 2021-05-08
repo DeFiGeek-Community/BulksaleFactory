@@ -97,39 +97,39 @@ export function successWithModerateSetting(ctx:Context|undefined=undefined):Cont
     return ctx;
 }
 
-export function successWithModerateSetting2(ctx:Context):Context{
+export function successWithArtNFTScenario(ctx:Context):Context{
     ctx.paramsSet.push({
-        totalIssuance: "1000",
-        sellingAmount: "500",
+        totalIssuance: "0.000000000000001",//10^15 (or, 1000 tokens for decimal=0 token)
+        sellingAmount: "0.000000000000001",
         templateName: "BulksaleV1.sol",
         startModification: 60*60,
         eventDuration: 60*60*24*5,
         lockDuration: 60*60*24*7*2,
         expirationDuration: 60*60*24*7*4*3,
         minEtherTarget: "100",
-        feeRatePerMil: 50,
+        feeRatePerMil: 1,
         timetravel1: 60*60*2,
         timetravel2: 60*60*24*7,
         timetravel3: 60*60,
         lots: {
-            a: "1.345",
-            b: "6.1322",
-            c: "30.1322",
-            d: "50.1322",
-            e: "10.0322",
-            f: "20.1322",
+            a: "100",// Zero-share attack
+            b: "0.1",
+            c: "0.1",
+            d: "0.1",
+            e: "0.1",
+            f: "0.1",
             g: "0.0"
         }
     });
     ctx.testcases.push([
         /* Check that each participants earned accordingly */
-        (bl) => betterexpect(bl.diff('alice', 'SampleToken')).toBeGtBN(0), /* alice is for her */
-        (bl) => betterexpect(bl.diff('bob', 'SampleToken')).toBeGtBN(0), /* bob is for him */
-        (bl) => betterexpect(bl.diff('carl', 'SampleToken')).toBeGtBN(0), /* carl is for him */
-        (bl) => betterexpect(bl.diff('david', 'SampleToken')).toBeGtBN(0), /* david is for him */
-        (bl) => betterexpect(bl.diff('eve', 'SampleToken')).toBeGtBN(0), /* eve is for her */
-        (bl) => betterexpect(bl.diff('fin', 'SampleToken')).toEqBN(0),/* fin is giver */
-        (bl) => betterexpect(bl.diff('george', 'SampleToken')).toBeGtBN(0),/* george is taker */
+        (bl) => betterexpect(bl.diff('alice', 'SampleToken')).toBeGtBN(0), /* alice gets token */
+        (bl) => betterexpect(bl.diff('bob', 'SampleToken')).toEqBN(0), /* Her share is nearly zero, refunded. */
+        (bl) => betterexpect(bl.diff('carl', 'SampleToken')).toEqBN(0), /* Her share is nearly zero, refunded. */
+        (bl) => betterexpect(bl.diff('david', 'SampleToken')).toEqBN(0), /* Her share is nearly zero, refunded. */
+        (bl) => betterexpect(bl.diff('eve', 'SampleToken')).toEqBN(0), /* Her share is nearly zero, refunded. */
+        (bl) => betterexpect(bl.diff('fin', 'SampleToken')).toEqBN(0), /* Her share is nearly zero, refunded. */
+        (bl) => betterexpect(bl.diff('george', 'SampleToken')).toEqBN(0), /* Her share is nearly zero, refunded. */
 
         /* Check that each participants paid accordingly */
         (bl) => betterexpect(bl.diff('alice', 'eth')).toBeLtBN(0), /* alice is for her */
@@ -137,15 +137,15 @@ export function successWithModerateSetting2(ctx:Context):Context{
         (bl) => betterexpect(bl.diff('carl', 'eth')).toBeLtBN(0), /* carl is for him */
         (bl) => betterexpect(bl.diff('david', 'eth')).toBeLtBN(0), /* david is for him */
         (bl) => betterexpect(bl.diff('eve', 'eth')).toBeLtBN(0), /* eve is for her */
-        (bl) => betterexpect(bl.diff('fin', 'eth')).toBeLtBN(0),/* fin is giver */
-        (bl) => betterexpect(bl.diff('george', 'eth')).toEqBN(0),/* george is taker */
+        (bl) => betterexpect(bl.diff('fin', 'eth')).toBeLtBN(0),/* fin gets refund */
+        (bl) => betterexpect(bl.diff('george', 'eth')).toEqBN(0),/* george shouldn't get refund */
 
         /* Check that no token is stucked in */
         (bl) => betterexpect(bl.diff('deployer', 'SampleToken')).toBeLtBN(0), /* deployer's ERC-20 balance in EOA */
         (bl) => betterexpect(bl.diff('deployer', 'eth')).toBeGtBN(0), /* deployer's eth balance in EOA */
         (bl) => betterexpect(bl.diff('BulksaleV1', 'eth')).toEqBN(0),/* BulksaleV1 doesn't have eth in the end */
         /* Check FeePool */
-        (bl) => betterexpect(bl.diff('foundation', 'eth')).toBeGtBN(0), /* foundation gets fee */
+        (bl) => betterexpect(bl.diff('foundation', 'eth')).toBeLtBN(0), /* With min fee rate, foundation loose money */
         (bl) => betterexpect(bl.diff('Factory', 'eth')).toEqBN(0), /* Factory has its remaining vault in eth */
     ]);
 
@@ -154,10 +154,10 @@ export function successWithModerateSetting2(ctx:Context):Context{
 
 
 
-export function successWithExtremeSetting1(ctx:Context):Context{
+export function successWithUpperBound(ctx:Context):Context{
     ctx.paramsSet.push({
-        totalIssuance: "9999999999999999",
-        sellingAmount: "9999999999999999",
+        totalIssuance: "115792089237316195423570985008687907853269984665640564039457",// (2^256-1)/(10^18)
+        sellingAmount: "115792089237316195423570985008687907853269984665640564039457",
         templateName: "BulksaleV1.sol",
         startModification: 60*60,
         eventDuration: 60*60*24*5,
@@ -208,3 +208,5 @@ export function successWithExtremeSetting1(ctx:Context):Context{
 
     return ctx
 }
+
+
