@@ -15,7 +15,7 @@ type Params = {
     totalIssuance: string;
     sellingAmount: string;
     templateName: string;
-    start: number;
+    startModification: number;
     eventDuration: number;
     lockDuration: number;
     expirationDuration: number;
@@ -45,14 +45,14 @@ export function successWithModerateSetting(ctx:Context|undefined=undefined):Cont
         totalIssuance: "1000000000.322288888322288888",
         sellingAmount: "300000000.532312999532312999",
         templateName: "Bulksale_DefiGeek_20210505",
-        start: Math.ceil(Date.now()/1000) + 60*60,
+        startModification: 60*60,
         eventDuration: 60*60*24*7,
         lockDuration: 60*60*24*7*4,
         expirationDuration: 60*60*24*7*4*6,
         minEtherTarget: 1,
         feeRatePerMil: 99,
-        timetravel1: 2*60*60,
-        timetravel2: 7*24*60*60,
+        timetravel1: 60*60*2,
+        timetravel2: 60*60*24*7,
         timetravel3: 60*60,
         lots: {
             a: "10.345",
@@ -84,12 +84,12 @@ export function successWithModerateSetting(ctx:Context|undefined=undefined):Cont
         (bl) => betterexpect(bl.diff('george', 'eth')).toEqBN(0),/* george is taker */
 
         /* Check that no token is stucked in */
-        (bl) => betterexpect(bl.diff('deployer', 'SampleToken')).toBeGtBN(0), /* deployer's ERC-20 balance in EOA */
-        (bl) => betterexpect(bl.diff('deployer', 'eth')).toBeLtBN(0), /* deployer's eth balance in EOA */
-        (bl) => betterexpect(bl.diff('BulksaleV1', 'eth')).toEqBN(0),/* BulksaleV1 doesn't have eth in the end */
+        (bl) => betterexpect(bl.diff('deployer', 'SampleToken')).toBeLtBN(0), /* deployer gives token */
+        (bl) => betterexpect(bl.diff('deployer', 'eth')).toBeGtBN(0), /* deployer raises eth  */
+        (bl) => betterexpect(bl.diff('BulksaleV1', 'eth')).toEqBN(0),/* BulksaleV1 exhausts all in the end */
         /* Check FeePool */
         (bl) => betterexpect(bl.diff('foundation', 'eth')).toBeGtBN(0), /* foundation gets fee */
-        (bl) => betterexpect(bl.diff('Factory', 'eth')).toBeGtBN(0), /* Factory has its remaining vault in eth */
+        (bl) => betterexpect(bl.diff('Factory', 'eth')).toEqBN(0), /* Factory exhausts all in the end */
     ]);
 
     return ctx;
@@ -100,14 +100,14 @@ export function successWithModerateSetting2(ctx:Context):Context{
         totalIssuance: "1000",
         sellingAmount: "500",
         templateName: "FooDAO_Tokensale",
-        start: Math.ceil(Date.now()/1000) + 60*60,
-        eventDuration: 60*60*24*3,
+        startModification: 60*60,
+        eventDuration: 60*60*24*5,
         lockDuration: 60*60*24*7*2,
         expirationDuration: 60*60*24*7*4*3,
         minEtherTarget: 100,
         feeRatePerMil: 50,
-        timetravel1: 2*60*60,
-        timetravel2: 7*24*60*60,
+        timetravel1: 60*60*2,
+        timetravel2: 60*60*24*7,
         timetravel3: 60*60,
         lots: {
             a: "1.345",
@@ -139,12 +139,12 @@ export function successWithModerateSetting2(ctx:Context):Context{
         (bl) => betterexpect(bl.diff('george', 'eth')).toEqBN(0),/* george is taker */
 
         /* Check that no token is stucked in */
-        (bl) => betterexpect(bl.diff('deployer', 'SampleToken')).toBeGtBN(0), /* deployer's ERC-20 balance in EOA */
-        (bl) => betterexpect(bl.diff('deployer', 'eth')).toBeLtBN(0), /* deployer's eth balance in EOA */
+        (bl) => betterexpect(bl.diff('deployer', 'SampleToken')).toBeLtBN(0), /* deployer's ERC-20 balance in EOA */
+        (bl) => betterexpect(bl.diff('deployer', 'eth')).toBeGtBN(0), /* deployer's eth balance in EOA */
         (bl) => betterexpect(bl.diff('BulksaleV1', 'eth')).toEqBN(0),/* BulksaleV1 doesn't have eth in the end */
         /* Check FeePool */
         (bl) => betterexpect(bl.diff('foundation', 'eth')).toBeGtBN(0), /* foundation gets fee */
-        (bl) => betterexpect(bl.diff('Factory', 'eth')).toBeGtBN(0), /* Factory has its remaining vault in eth */
+        (bl) => betterexpect(bl.diff('Factory', 'eth')).toEqBN(0), /* Factory has its remaining vault in eth */
     ]);
 
     return ctx

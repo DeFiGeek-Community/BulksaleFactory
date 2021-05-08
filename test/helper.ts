@@ -1,5 +1,5 @@
 const { ethers } = require("hardhat");
-import { BigNumber } from 'ethers';
+import { BigNumber, Contract, Signer } from 'ethers';
 const {  MockProvider } = require("ethereum-waffle");
 
 let provider;
@@ -17,24 +17,38 @@ export function getSharedSigners(){
   return signers;
 }
 
-export async function summon(contractName:string, ABI:any, args:Array<any> = [], signer=null){
-  const [first] = await getSharedSigners();
-  if(!signer){
-    signer = first;
+export async function summon(contractName:string, ABI:any, args:Array<any> = [], signer:Signer|undefined=undefined):Promise<Contract>{
+  return await _summon(contractName, ABI, !args ? [] : args, !signer ? undefined : signer, true);
+}
+export async function create(contractName:string, ABI:any, args:Array<any> = [], signer:Signer|undefined=undefined):Promise<Contract>{
+  return await _summon(contractName, ABI, !args ? [] : args, !signer ? undefined : signer, false);
+}
+let signedContracts = {};
+export async function _summon(contractName:string, ABI:any, args:Array<any> = [], signer:Signer|undefined=undefined, singleton:boolean=true):Promise<Contract>{
+  let result;
+  if( singleton && !!signedContracts[contractName] ) {
+    result = signedContracts[contractName];
+  } else {
+    const [first] = await getSharedSigners();
+    if(!signer){
+      signer = first;
+    }
+
+    const _Factory = await ethers.getContractFactory(contractName, signer);
+
+    const _Contract:Contract = await _Factory.deploy(...args);
+
+    let provider = getSharedProvider();
+
+    let contract:Contract = new ethers.Contract(_Contract.address, ABI, provider);
+
+    let _signedContract:Contract = contract.connect(<Signer>signer);
+
+    if(singleton) signedContracts[contractName] = _signedContract; // Don't save if one-time contract.
+
+    result = _signedContract;
   }
-
-  const _Factory = await ethers.getContractFactory(contractName, signer);
-
-  const _Contract = await _Factory.deploy(...args);
-
-  let provider = getSharedProvider();
-
-  let contract = new ethers.Contract(_Contract.address, ABI, provider);
-
-  let signedContract = contract.connect(signer);
-
-  signedContract._Contract = _Contract;
-  return signedContract;
+  return result;
 }
 
 
@@ -50,8 +64,8 @@ export function parseInteger(bytes){
   return parseInt(bytes);
 }
 
-export async function getLogs(Contract, event, arg, from=0, to=100){
-  return Contract.queryFilter(Contract._Contract.filters[event](arg), from, to);
+export async function getLogs(Contract:Contract, event, arg, from=0, to=100){
+  return Contract.queryFilter(Contract.filters[event](arg), from, to);
 }
 
 const codec = new ethers.utils.AbiCoder();
@@ -84,6 +98,10 @@ export class BalanceLogger{
   }
   async log(){
     this.list.push(await this.getBalances());
+  }
+  get(person:string, token:string):BigNumber{
+    let latestBal: BigNumber = this.list[this.list.length-1][person][token];
+    return latestBal;
   }
   diff(person:string, token:string): BigNumber{
     let newBal: BigNumber = this.list[this.list.length-1][person][token];
@@ -145,11 +163,11 @@ export class BalanceLogger{
         if(username.match(/^[A-Z][a-zA-Z0-9]+/)){
           /* contract balance */
           let Contract = this.signersObj[username];
-          const val = toFloat((await Contract.provider.getBalance(Contract.address)).toString() ).padEnd(14, ' ');
+          const val = toFloat((await Contract.provider.getBalance(Contract.address)).toString() ).padEnd(18, ' ');
           arr2.unshift(`${un}: eth:${val}`);
         } else {
           /* EOA balance */
-          const val = toFloat((await this.signersObj[username].getBalance()).toString() ).padEnd(14, ' ');
+          const val = toFloat((await this.signersObj[username].getBalance()).toString() ).padEnd(18, ' ');
           arr2.unshift(`${un}: eth:${val}`);
         }
         const _val = this.diffStr(username, 'eth').padEnd(14, ' ');
@@ -194,4 +212,11 @@ export function toERC20(amount:string, decimal:number=18): BigNumber{
 }
 export function toFloat(amount:string, decimal:number=18):string{
   return ethers.utils.formatUnits(amount, decimal);
+}
+export async function onChainNow(){
+  const [first] = await getSharedSigners();
+  const provider = first.provider;
+  const blockNumber:number = await provider.getBlockNumber();
+  const block = await provider.getBlock( blockNumber );
+  return block.timestamp;
 }

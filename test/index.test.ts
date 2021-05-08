@@ -6,10 +6,10 @@ const { waffleJest } = require("@ethereum-waffle/jest");
 expect.extend(waffleJest);
 const betterexpect = (<any>expect); // TODO: better typing for waffleJest
 
-import { summon,getSharedProvider, getSharedSigners, 
+import { summon, create, getSharedProvider, getSharedSigners, 
   parseAddr, parseBool, parseInteger, getLogs,
   encode, decode, increaseTime, BalanceLogger,
-  toERC20, toFloat } from "./helper";
+  toERC20, toFloat, onChainNow } from "./helper";
 import { getAbiArgs, sendEther, parameterizedSpecs } from "./scenarioHelper";
 import { Severity, Reporter } from "jest-allure/dist/Reporter";
 import { suite, test } from '@testdeck/jest'
@@ -18,7 +18,8 @@ const FACTORY_ABI = [
     'function predeploy(address, uint)',
     'function deploy(string, address, uint, bytes)',
     'function addTemplate(string, address)',
-    'function withdraw(address, uint)'
+    'function withdraw(address, uint)',
+    'event Deployed(address indexed, address indexed, address indexed, bytes);'
 ];
 const SampleToken_ABI = [
     "function balanceOf(address) view returns (uint)",
@@ -33,9 +34,11 @@ const BULKSALEV1_ABI = [
 
 describe("Factory", function() {
     const { paramsSet, testcases } = parameterizedSpecs();
-    
+    let provider;
+
     paramsSet.map(($p,i)=>{
-        it(`creates a ${$p.templateName} bulksale
+        const templateName = $p.templateName;
+        it(`creates a ${templateName} bulksale
             with ${$p.sellingAmount}/${$p.totalIssuance}
             and try a claim`, async function() {
 
@@ -54,8 +57,8 @@ describe("Factory", function() {
             const Factory = await summon("Factory", FACTORY_ABI, [foundation.address], foundation);
             const SampleToken = await summon("SampleToken", SampleToken_ABI, [TOTAL_ISSUANCE], deployer);
             const BulksaleV1 = await summon("BulksaleV1", BULKSALEV1_ABI, [], foundation);
+            if (!provider) provider = getSharedProvider();
 
-            const provider = getSharedProvider();
             const bl = new BalanceLogger({SampleToken}, {foundation,Factory,deployer,BulksaleV1,alice,bob,carl,david,eve,fin,george}, provider);
 
             await bl.log();
@@ -65,13 +68,10 @@ describe("Factory", function() {
             /* 3. Exec scenario */
             const tokenAddr = SampleToken.address;
             const bulksaleAddr = BulksaleV1.address;
-            const templateName = $p.templateName;
-            let anHourLater = $p.start;
-            let sevenDays = $p.eventDuration;
             const argsTokenOnSale = getAbiArgs(templateName, {
                 token: tokenAddr,
-                start: anHourLater,
-                eventDuration: sevenDays,
+                start: await onChainNow() + $p.startModification,
+                eventDuration: $p.eventDuration,
                 lockDuration: $p.lockDuration,
                 expirationDuration: $p.expirationDuration,
                 sellingAmount: SELLING_AMOUNT,
@@ -94,8 +94,8 @@ describe("Factory", function() {
 
             /* Session begins */
             let deployResult = await getLogs(Factory, 'Deployed', deployer.address);
-            let logDeployedBulksaleAddr = parseAddr(deployResult[0].topics[3]);
-            const BulksaleClone = (new ethers.Contract(logDeployedBulksaleAddr, BULKSALEV1_ABI, provider));
+            let latestBulksaleCloneAddr = parseAddr(deployResult[deployResult.length-1].topics[3]);
+            const BulksaleClone = (new ethers.Contract(latestBulksaleCloneAddr, BULKSALEV1_ABI, provider));
 
             if(parseFloat($p.lots.a) !== 0) await sendEther(BulksaleClone.address, $p.lots.a, alice);
             if(parseFloat($p.lots.b) !== 0) await sendEther(BulksaleClone.address, $p.lots.b, bob);
@@ -132,14 +132,11 @@ describe("Factory", function() {
 
             /* Platform withdraws fee */
             await bl.log();
-            console.log(toFloat(bl.diff('foundation', 'eth').toString() ));
-            await (await Factory.connect(foundation).withdraw(foundation.address, bl.diff('foundation', 'eth').mul(-10) )).wait();
+            await (await Factory.connect(foundation).withdraw(foundation.address, bl.get('Factory', 'eth') )).wait();
 
             await increaseTime($p.timetravel3);
             await bl.log();
             await bl.dump();
-
-
 
             /* 4. Verify  */
             testcases[i].map(assertion=> assertion(bl) );

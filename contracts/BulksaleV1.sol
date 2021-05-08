@@ -53,7 +53,7 @@ contract BulksaleV1 is ITemplateContract, ReentrancyGuard {
     */
 
     /* States in the deployment initialization */
-    uint public START = 1620212324;
+    uint public START;
     uint public END = START + 7 days;
     uint public TOTAL_DISTRIBUTE_AMOUNT = 90_360_300e18;
     uint public MINIMAL_PROVIDE_AMOUNT = 700 ether;

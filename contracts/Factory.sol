@@ -97,7 +97,7 @@ contract Factory is ReentrancyGuard {
     }
     function withdraw(address to, uint amount) public onlyGovernance nonReentrant {
         require(to != address(0), "Don't discard treaury!");
-        require(address(this).balance > amount, "Amount is too big");
+        require(address(this).balance >= amount, "Amount is too big");
 
         (bool success,) = payable(to).call{value:amount}("");
         require(success,"transfer failed");
