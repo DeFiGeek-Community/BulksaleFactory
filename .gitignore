@@ -4,3 +4,4 @@ node_modules
 dist
 test/**/*.js
 allure-results
+artifacts/build-info
