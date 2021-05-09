@@ -11,6 +11,7 @@ import { summon, create, getSharedProvider, getSharedSigners,
   encode, decode, increaseTime, BalanceLogger,
   toERC20, toFloat, onChainNow } from "./helper";
 import { getAbiArgs, sendEther, parameterizedSpecs } from "./scenarioHelper";
+import { State } from './parameterizedSpecs';
 import { Severity, Reporter } from "jest-allure/dist/Reporter";
 import { suite, test } from '@testdeck/jest'
 
@@ -34,8 +35,24 @@ const BULKSALEV1_ABI = [
 
 
 describe("Factory", function() {
-    const { paramsSet, testcases } = parameterizedSpecs();
+    const {
+        paramsSet,
+        addTemplateSpecs,
+        deploySpecs,
+        depositSpecs,
+        claimSpecs,
+        deployerWithdrawalSpecs,
+        foundationWithdrawalSpecs,
+        endSpecs
+     } = parameterizedSpecs();
     let provider;
+    console.log(
+        addTemplateSpecs,
+        deploySpecs,
+        depositSpecs,
+        claimSpecs,
+        deployerWithdrawalSpecs,
+        foundationWithdrawalSpecs)
 
     paramsSet.map(($p,i)=>{
         const templateName = $p.templateName;
@@ -52,6 +69,7 @@ describe("Factory", function() {
 
             /* 2. Set signed contracts */
             const [foundation,deployer,alice,bob,carl,david,eve,fin,george] = await getSharedSigners();
+            const first = foundation;
             const TOTAL_ISSUANCE:BigNumber = toERC20($p.totalIssuance);
             const SELLING_AMOUNT:BigNumber = toERC20($p.sellingAmount);
             const MIN_ETHER_TARGET:BigNumber = toERC20($p.minEtherTarget);
@@ -86,9 +104,11 @@ describe("Factory", function() {
 
             /* Deployment begins */
             if( await Factory.templates(templateName) === "0x0000000000000000000000000000000000000000" ) {
+                addTemplateSpecs[i].map(assertion => assertion(<State>{bl,Factory,BulksaleV1,SampleToken,first}) );
                 await ( await Factory.connect(foundation).addTemplate(templateName, bulksaleAddr) ).wait();
             }
             await ( await SampleToken.connect(deployer).approve(Factory.address, SELLING_AMOUNT) ).wait();
+            deploySpecs[i].map(assertion => assertion(<State>{bl,Factory,BulksaleV1,SampleToken,first}) );
             await ( await Factory.connect(deployer).deploy(templateName, tokenAddr, SELLING_AMOUNT, argsTokenOnSale) ).wait();
             /* Deployment ended */
 
@@ -103,6 +123,7 @@ describe("Factory", function() {
             let latestBulksaleCloneAddr = parseAddr(deployResult[deployResult.length-1].topics[3]);
             const BulksaleClone = (new ethers.Contract(latestBulksaleCloneAddr, BULKSALEV1_ABI, provider));
 
+            depositSpecs[i].map(assertion => assertion(<State>{bl,Factory,BulksaleV1,SampleToken,first}) );
             if(parseFloat($p.lots.a) !== 0) await sendEther(BulksaleClone.address, $p.lots.a, alice);
             if(parseFloat($p.lots.b) !== 0) await sendEther(BulksaleClone.address, $p.lots.b, bob);
             if(parseFloat($p.lots.c) !== 0) await sendEther(BulksaleClone.address, $p.lots.c, carl);
@@ -122,22 +143,25 @@ describe("Factory", function() {
                 Finalize each own result
             */
             /* Simply for themselves */
-                await (await BulksaleClone.connect(alice).claim(alice.address, alice.address)).wait();
-                await (await BulksaleClone.connect(bob).claim(bob.address, bob.address)).wait();
-                await (await BulksaleClone.connect(carl).claim(carl.address, carl.address)).wait();
-                await (await BulksaleClone.connect(david).claim(david.address, david.address)).wait();
+            claimSpecs[i].map(assertion => assertion(<State>{bl,Factory,BulksaleV1,SampleToken,first}) );
+            await (await BulksaleClone.connect(alice).claim(alice.address, alice.address)).wait();
+            await (await BulksaleClone.connect(bob).claim(bob.address, bob.address)).wait();
+            await (await BulksaleClone.connect(carl).claim(carl.address, carl.address)).wait();
+            await (await BulksaleClone.connect(david).claim(david.address, david.address)).wait();
 
-                /* alice claims for gas-less-eve */
-                await (await BulksaleClone.connect(alice).claim(eve.address, eve.address)).wait();
+            /* alice claims for gas-less-eve */
+            await (await BulksaleClone.connect(alice).claim(eve.address, eve.address)).wait();
 
-                /* fin gives his contribution to gas-less-george */
-                await (await BulksaleClone.connect(fin).claim(fin.address, george.address)).wait();
+            /* fin gives his contribution to gas-less-george */
+            await (await BulksaleClone.connect(fin).claim(fin.address, george.address)).wait();
 
             /* withdraw the raised fund */
+            deployerWithdrawalSpecs[i].map(assertion => assertion(<State>{bl,Factory,BulksaleV1,SampleToken,first}) );
             await (await BulksaleClone.connect(deployer).withdrawProvidedETH()).wait();
 
             /* Platform withdraws fee */
             await bl.log();
+            foundationWithdrawalSpecs[i].map(assertion => assertion(<State>{bl,Factory,BulksaleV1,SampleToken,first}) );
             await (await Factory.connect(foundation).withdraw(foundation.address, bl.get('Factory', 'eth') )).wait();
 
             await increaseTime($p.timetravel3);
@@ -145,7 +169,7 @@ describe("Factory", function() {
             await bl.dump();
 
             /* 4. Verify  */
-            testcases[i].map(assertion=> assertion(bl) );
+            endSpecs[i].map(assertion => assertion(<State>{bl,Factory,BulksaleV1,SampleToken,first}) );
         });
     });
 });
