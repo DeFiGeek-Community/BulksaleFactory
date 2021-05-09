@@ -62,6 +62,9 @@ export async function sendEther(to:any, amountStr:string, signer){
 let ctx;
 export function parameterizedSpecs(){
     ctx = specs.successWithModerateSetting();
-    Object.keys(specs).map(specName=> ctx = specs[specName](ctx) );
+    let specKeys = Object.keys(specs);
+    specKeys.shift();
+    specKeys.map(specName=> ctx = specs[specName](ctx) );
     return ctx;
 }
+

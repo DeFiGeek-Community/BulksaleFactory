@@ -14,6 +14,7 @@ type ParamsLots = {
     g: string;
 }
 type Params = {
+    title: string;
     totalIssuance: string;
     sellingAmount: string;
     templateName: string;
@@ -31,6 +32,7 @@ type Params = {
 type Context = {
     paramsSet:Array<Params>;
     addTemplateSpecs:Array<ParameterizedTestCase>;
+    approveSpecs:Array<ParameterizedTestCase>;
     deploySpecs:Array<ParameterizedTestCase>;
     depositSpecs:Array<ParameterizedTestCase>;
     claimSpecs:Array<ParameterizedTestCase>;
@@ -45,7 +47,8 @@ export type State = {
   Factory: Contract;  
   BulksaleV1: Contract;
   SampleToken: Contract;
-  first: Signer;
+  signer: Signer;
+  args: Array<any>|undefined;
 }
 
 
@@ -56,6 +59,7 @@ export function successWithModerateSetting(ctx:Context|undefined=undefined):Cont
     if(!ctx) ctx = {
         paramsSet: [],
         addTemplateSpecs: [],
+        approveSpecs: [],
         deploySpecs: [],
         depositSpecs: [],
         claimSpecs: [],
@@ -65,6 +69,7 @@ export function successWithModerateSetting(ctx:Context|undefined=undefined):Cont
     };
 
     ctx.paramsSet.push({
+        title: Object.keys(this)[ctx.paramsSet.length],
         totalIssuance: "1000000000.322288888322288888",
         sellingAmount: "300000000.532312999532312999",
         templateName: "BulksaleV1.sol",
@@ -88,6 +93,7 @@ export function successWithModerateSetting(ctx:Context|undefined=undefined):Cont
         }
     });
     ctx.addTemplateSpecs.push([]);
+    ctx.approveSpecs.push([]);
     ctx.deploySpecs.push([]);
     ctx.depositSpecs.push([]);
     ctx.claimSpecs.push([]);
@@ -126,6 +132,7 @@ export function successWithModerateSetting(ctx:Context|undefined=undefined):Cont
 
 export function successWithArtNFTScenario(ctx:Context):Context{
     ctx.paramsSet.push({
+        title: Object.keys(this)[ctx.paramsSet.length],
         totalIssuance: "0.000000000000001",//10^15 (or, 1000 tokens for decimal=0 token)
         sellingAmount: "0.000000000000001",
         templateName: "BulksaleV1.sol",
@@ -149,6 +156,7 @@ export function successWithArtNFTScenario(ctx:Context):Context{
         }
     });
     ctx.addTemplateSpecs.push([]);
+    ctx.approveSpecs.push([]);
     ctx.deploySpecs.push([]);
     ctx.depositSpecs.push([]);
     ctx.claimSpecs.push([]);
@@ -189,6 +197,7 @@ export function successWithArtNFTScenario(ctx:Context):Context{
 
 export function successWithUpperBound(ctx:Context):Context{
     ctx.paramsSet.push({
+        title: Object.keys(this)[ctx.paramsSet.length],
         totalIssuance: "115792089237316195423570985008687907853269984665640564039457",// (2^256-1)/(10^18)
         sellingAmount: "115792089237316195423570985008687907853269984665640564039457",
         templateName: "BulksaleV1.sol",
@@ -212,6 +221,7 @@ export function successWithUpperBound(ctx:Context):Context{
         }
     });
     ctx.addTemplateSpecs.push([]);
+    ctx.approveSpecs.push([]);
     ctx.deploySpecs.push([]);
     ctx.depositSpecs.push([]);
     ctx.claimSpecs.push([]);
@@ -237,7 +247,7 @@ export function successWithUpperBound(ctx:Context):Context{
         (s:State) => betterexpect(s.bl.diff('george', 'eth')).toEqBN(0),/* george is taker */
 
         /* Check that no token is stucked in */
-        (s:State) => betterexpect(s.bl.diff('deployer', 'SampleToken')).toEqBN(toERC20(ctx.paramsSet[ctx.paramsSet.length-1].totalIssuance).mul(-1)), /* Use all issuance. */
+        (s:State) => betterexpect(s.bl.diff('deployer', 'SampleToken')).toBeLtBN(0), /* Use all issuance. */
         (s:State) => betterexpect(s.bl.diff('deployer', 'eth')).toBeLtBN(0), /* deployer lose money and gas is minus */
         (s:State) => betterexpect(s.bl.diff('BulksaleV1', 'eth')).toEqBN(0),/* BulksaleV1 doesn't have eth in the end */
         /* Check FeePool */
@@ -248,4 +258,91 @@ export function successWithUpperBound(ctx:Context):Context{
     return ctx
 }
 
+
+export function failApprovalWithZeroSupply(ctx:Context):Context{
+    ctx.paramsSet.push({
+        title: Object.keys(this)[ctx.paramsSet.length],
+        totalIssuance: "100",// (2^256-1)/(10^18)
+        sellingAmount: "0",
+        templateName: "BulksaleV1.sol",
+        startModification: 60*60,
+        eventDuration: 60*60*24*5,
+        lockDuration: 60*60*24*7*2,
+        expirationDuration: 60*60*24*7*4*3,
+        minEtherTarget: "0.0000333",
+        feeRatePerMil: 99,
+        timetravel1: 60*60*2,
+        timetravel2: 60*60*24*7,
+        timetravel3: 60*60,
+        lots: {
+            a: "1",
+            b: "1",
+            c: "1",
+            d: "1",
+            e: "1",
+            f: "1",
+            g: "0.0"
+        }
+    });
+    ctx.addTemplateSpecs.push([]);
+    ctx.approveSpecs.push([
+        async (s:State)=>{
+            await betterexpect(s.SampleToken
+                .connect(s.signer)
+                .approve( ...(<Array<any>>s.args) )
+            ).toBeRevertedWith("Amount is zero.")
+        }
+    ])
+    ctx.deploySpecs.push([]);
+    ctx.depositSpecs.push([]);
+    ctx.claimSpecs.push([]);
+    ctx.deployerWithdrawalSpecs.push([]);
+    ctx.foundationWithdrawalSpecs.push([]);
+    ctx.endSpecs.push([]);
+    return ctx
+}
+
+
+export function failDeployWithZeroSupply(ctx:Context):Context{
+    ctx.paramsSet.push({
+        title: Object.keys(this)[ctx.paramsSet.length],
+        totalIssuance: "100",// (2^256-1)/(10^18)
+        sellingAmount: "0",
+        templateName: "BulksaleV1.sol",
+        startModification: 60*60,
+        eventDuration: 60*60*24*5,
+        lockDuration: 60*60*24*7*2,
+        expirationDuration: 60*60*24*7*4*3,
+        minEtherTarget: "0.0000333",
+        feeRatePerMil: 99,
+        timetravel1: 60*60*2,
+        timetravel2: 60*60*24*7,
+        timetravel3: 60*60,
+        lots: {
+            a: "1",
+            b: "1",
+            c: "1",
+            d: "1",
+            e: "1",
+            f: "1",
+            g: "0.0"
+        }
+    });
+    ctx.addTemplateSpecs.push([]);
+    ctx.approveSpecs.push([])
+    ctx.deploySpecs.push([
+        async (s:State)=>{
+            await betterexpect(s.Factory
+                .connect(s.signer)
+                .deploy( ...(<Array<any>>s.args) )
+            ).toBeRevertedWith("Having an event without tokens are not permitted.")
+        }
+    ]);
+    ctx.depositSpecs.push([]);
+    ctx.claimSpecs.push([]);
+    ctx.deployerWithdrawalSpecs.push([]);
+    ctx.foundationWithdrawalSpecs.push([]);
+    ctx.endSpecs.push([]);
+    return ctx
+}
 

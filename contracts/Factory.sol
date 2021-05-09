@@ -56,8 +56,8 @@ contract Factory is ReentrancyGuard {
         /* 1. Args must be non-empty and allowance is enough. */
         require(bytes(templateName).length > 0, "Empty string.");
         require(tokenAddr != address(0), "Go with non null address.");
-        require(sellingAmount > 0, "Sell more.");
-        require(_allowance > 0, "Allowance is zero.");
+        require(sellingAmount > 0, "Having an event without tokens are not permitted.");
+        require(_allowance > 0, "You have to approve ERC-20 to deploy.");
         require(_allowance >= sellingAmount, "allowance is not enough.");
 
         /* 2. Make a clone. */

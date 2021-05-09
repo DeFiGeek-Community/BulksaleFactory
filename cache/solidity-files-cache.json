@@ -253,8 +253,8 @@
       ]
     },
     "/Users/0xmotoko/code/bulksale/contracts/Factory.sol": {
-      "lastModificationDate": 1620390619977,
-      "contentHash": "3da883740c62d71f8b4b230c9edea7b6",
+      "lastModificationDate": 1620534340696,
+      "contentHash": "653f5e71db11b3e92fe9b55511fb3ac4",
       "sourceName": "contracts/Factory.sol",
       "solcConfig": {
         "version": "0.8.3",

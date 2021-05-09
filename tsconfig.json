@@ -7,7 +7,7 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "declaration": true,
-    "strict": true,
+    "strict": false,
     "sourceMap": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
