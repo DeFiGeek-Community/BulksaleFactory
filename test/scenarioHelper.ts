@@ -33,6 +33,8 @@ export function getAbiArgs(templateName, {
         types = ["address", "uint", "uint", "uint", "uint", "uint", "uint", 'address', 'uint'];
     } else if(templateName == 'BulksaleV2.sol') {
         types = ["address", "uint", "uint", "uint", "uint", "uint", "uint", 'address', 'uint'];
+    } else if(templateName == 'ERC20CRV.vy') {// for revert test
+        types = ["address", "uint", "uint", "uint", "uint", "uint", "uint", 'address', 'uint'];
     } else {
         console.trace(`${templateName} is not planned yet. Add your typedef for abi here.`);
         throw 1;

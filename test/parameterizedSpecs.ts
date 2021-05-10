@@ -353,6 +353,8 @@ export function failDeployWithZeroSupply(ctx:Context):Context{
     return ctx
 }
 
+
+
 export function failToAddTemplateByNonGoverner(ctx:Context):Context{
     ctx.paramsSet.push({
         only: false,
@@ -441,4 +443,51 @@ export function failDepositBeforeStartingTime(ctx:Context):Context{
     ctx.endSpecs.push([]);
     return ctx
 }
+
+
+
+export function failDeployWithUnregisteredTemplate(ctx:Context):Context{
+    ctx.paramsSet.push({
+        only: false,
+        title: Object.keys(this)[ctx.paramsSet.length],
+        totalIssuance: "100",
+        sellingAmount: "100",
+        templateName: "BulksaleV1.sol",
+        startModification: 60*60,
+        eventDuration: 60*60*24*5,
+        lockDuration: 60*60*24*7*2,
+        expirationDuration: 60*60*24*7*4*3,
+        minEtherTarget: "0.0000333",
+        feeRatePerMil: 99,
+        timetravel1: 60*60*2,
+        timetravel2: 60*60*24*7,
+        timetravel3: 60*60,
+        lots: {
+            a: "1",
+            b: "1",
+            c: "1",
+            d: "1",
+            e: "1",
+            f: "1",
+            g: "0.0"
+        }
+    });
+    ctx.addTemplateSpecs.push([]);
+    ctx.approveSpecs.push([])
+    ctx.deploySpecs.push([
+        async (s:State)=>{
+            await betterexpect(s.Factory
+                .connect(s.signer)
+                .deploy( "ERC20CRV.vy", s.args[1], s.args[2], s.args[3] )
+            ).toBeRevertedWith("No such template in the list.")
+        }
+    ]);
+    ctx.depositSpecs.push([]);
+    ctx.claimSpecs.push([]);
+    ctx.deployerWithdrawalSpecs.push([]);
+    ctx.foundationWithdrawalSpecs.push([]);
+    ctx.endSpecs.push([]);
+    return ctx
+}
+
 

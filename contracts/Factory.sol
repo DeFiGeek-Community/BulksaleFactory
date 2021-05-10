@@ -51,17 +51,22 @@ contract Factory is ReentrancyGuard {
         External Interfaces
     */
     function deploy(string memory templateName, address tokenAddr, uint sellingAmount, bytes memory abiArgs) public nonReentrant returns (address deployedAddr) {
-        uint _allowance = IERC20(tokenAddr).allowance(msg.sender, address(this));
 
         /* 1. Args must be non-empty and allowance is enough. */
         require(bytes(templateName).length > 0, "Empty string.");
         require(tokenAddr != address(0), "Go with non null address.");
+
+        address templateAddr = templates[templateName];
+
+        require(templateAddr != address(0), "No such template in the list.");
+
         require(sellingAmount > 0, "Having an event without tokens are not permitted.");
+
+        uint _allowance = IERC20(tokenAddr).allowance(msg.sender, address(this));
         require(_allowance > 0, "You have to approve ERC-20 to deploy.");
         require(_allowance >= sellingAmount, "allowance is not enough.");
 
         /* 2. Make a clone. */
-        address templateAddr = templates[templateName];
         deployedAddr = _createClone(templateAddr);
 
         /* 3. Fund it. */
