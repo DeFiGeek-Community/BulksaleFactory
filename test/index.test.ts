@@ -1,3 +1,5 @@
+const isDebug = false;
+
 const { ethers } = require("hardhat");
 import { BigNumber } from 'ethers';
 
@@ -78,7 +80,7 @@ describe("Factory", function() {
     paramsSet.map(($p,i)=>{
         const templateName = $p.templateName;
         describe($p.title, ()=>{
-            it(`creates a sale with ${templateName} template
+            (($p.only) ? it.only : it)(`creates a sale with ${templateName} template
                 with sell/supply=${$p.sellingAmount}/${$p.totalIssuance}=${($p.totalIssuance!=0) ? Math.ceil(100*$p.sellingAmount/$p.totalIssuance) : '??'}%
                 term: ${$p.eventDuration/(60*60*24)}days
                 lock: ${$p.lockDuration/(60*60*24)}days
@@ -109,10 +111,10 @@ describe("Factory", function() {
                 const BulksaleV1 = await summon("BulksaleV1", BULKSALEV1_ABI, [], foundation);
                 if (!provider) provider = getSharedProvider();
 
-                const bl = new BalanceLogger({SampleToken}, {foundation,Factory,deployer,BulksaleV1,alice,bob,carl,david,eve,fin,george}, provider, `${templateName}:${i}`);
+                const bl = new BalanceLogger({SampleToken}, {foundation,Factory,deployer,BulksaleV1,alice,bob,carl,david,eve,fin,george}, provider, `${templateName}:${i}th-${$p.title}`);
 
                 await bl.log();
-                await bl.dump();
+                if(isDebug) await bl.dump();
 
 
                 /* 3. Exec scenario */
@@ -132,19 +134,21 @@ describe("Factory", function() {
 
                 /* Deployment begins */
                 if( await Factory.templates(templateName) === "0x0000000000000000000000000000000000000000" ) {
-                    await Promise.all(addTemplateSpecs[i].map(async assertion => await assertion(<State>{bl,Factory,BulksaleV1,SampleToken,signer:foundation,args:[]}) ));
+                    await Promise.all(addTemplateSpecs[i].map(async assertion => await assertion(<State>{bl,Factory,BulksaleV1,SampleToken,signer:foundation,args:[templateName, bulksaleAddr]}) ));
                     try {
                         await ( await Factory.connect(foundation).addTemplate(templateName, bulksaleAddr) ).wait();
-                    } catch (e) { console.log(e.message) }
+                    } catch (e) { if(isDebug) console.log(e.message) }
                 }
+
                 await Promise.all(approveSpecs[i].map(async assertion => await assertion(<State>{bl,Factory,BulksaleV1,SampleToken,signer:deployer, args: [Factory.address, SELLING_AMOUNT] }) ));
                 try {
                     await ( await SampleToken.connect(deployer).approve(Factory.address, SELLING_AMOUNT) ).wait();
-                } catch (e) { console.log(e.message) }
+                } catch (e) { if(isDebug) console.log(e.message) }
+
                 await Promise.all(deploySpecs[i].map(async assertion => await assertion(<State>{bl,Factory,BulksaleV1,SampleToken,signer:deployer, args: [templateName, tokenAddr, SELLING_AMOUNT, argsTokenOnSale] }) ));
                 try {
                     await ( await Factory.connect(deployer).deploy(templateName, tokenAddr, SELLING_AMOUNT, argsTokenOnSale) ).wait();
-                } catch (e) { console.log(e.message) }
+                } catch (e) { if(isDebug) console.log(e.message) }
                 /* Deployment ended */
 
 
@@ -161,25 +165,25 @@ describe("Factory", function() {
                 await Promise.all(depositSpecs[i].map(async assertion => await assertion(<State>{bl,Factory,BulksaleV1,SampleToken,signer,args:[BulksaleClone.address, $p.lots.a, alice]}) ));
                 try {
                     if(parseFloat($p.lots.a) !== 0) await sendEther(BulksaleClone.address, $p.lots.a, alice);
-                } catch (e) { console.log(e.message) }
+                } catch (e) { if(isDebug) console.log(e.message) }
                 try {
                     if(parseFloat($p.lots.b) !== 0) await sendEther(BulksaleClone.address, $p.lots.b, bob);
-                } catch (e) { console.log(e.message) }
+                } catch (e) { if(isDebug) console.log(e.message) }
                 try {
                     if(parseFloat($p.lots.c) !== 0) await sendEther(BulksaleClone.address, $p.lots.c, carl);
-                } catch (e) { console.log(e.message) }
+                } catch (e) { if(isDebug) console.log(e.message) }
                 try {
                     if(parseFloat($p.lots.d) !== 0) await sendEther(BulksaleClone.address, $p.lots.d, david);
-                } catch (e) { console.log(e.message) }
+                } catch (e) { if(isDebug) console.log(e.message) }
                 try {
                     if(parseFloat($p.lots.e) !== 0) await sendEther(BulksaleClone.address, $p.lots.e, eve);
-                } catch (e) { console.log(e.message) }
+                } catch (e) { if(isDebug) console.log(e.message) }
                 try {
                     if(parseFloat($p.lots.f) !== 0) await sendEther(BulksaleClone.address, $p.lots.f, fin);
-                } catch (e) { console.log(e.message) }
+                } catch (e) { if(isDebug) console.log(e.message) }
                 try {
                     if(parseFloat($p.lots.g) !== 0) await sendEther(BulksaleClone.address, $p.lots.g, george);
-                } catch (e) { console.log(e.message) }
+                } catch (e) { if(isDebug) console.log(e.message) }
                     /* Session ends */
 
 
@@ -195,43 +199,43 @@ describe("Factory", function() {
                 await Promise.all(claimSpecs[i].map(async assertion => assertion(<State>{bl,Factory,BulksaleV1,SampleToken,signer:alice,args:[alice.address, alice.address]}) ));
                 try {
                     await (await BulksaleClone.connect(alice).claim(alice.address, alice.address)).wait();
-                } catch (e) { console.log(e.message) }
+                } catch (e) { if(isDebug) console.log(e.message) }
 
                 try {
                     await (await BulksaleClone.connect(bob).claim(bob.address, bob.address)).wait();
-                } catch (e) { console.log(e.message) }
+                } catch (e) { if(isDebug) console.log(e.message) }
 
                 try {
                     await (await BulksaleClone.connect(carl).claim(carl.address, carl.address)).wait();
-                } catch (e) { console.log(e.message) }
+                } catch (e) { if(isDebug) console.log(e.message) }
 
                 try {
                     await (await BulksaleClone.connect(david).claim(david.address, david.address)).wait();
-                } catch (e) { console.log(e.message) }
+                } catch (e) { if(isDebug) console.log(e.message) }
 
 
                 /* alice claims for gas-less-eve */
                 try {
                     await (await BulksaleClone.connect(alice).claim(eve.address, eve.address)).wait();
-                } catch (e) { console.log(e.message) }
+                } catch (e) { if(isDebug) console.log(e.message) }
 
                 /* fin gives his contribution to gas-less-george */
                 try {
                     await (await BulksaleClone.connect(fin).claim(fin.address, george.address)).wait();
-                } catch (e) { console.log(e.message) }
+                } catch (e) { if(isDebug) console.log(e.message) }
 
                 /* withdraw the raised fund */
                 await Promise.all(deployerWithdrawalSpecs[i].map(async assertion => await assertion(<State>{bl,Factory,BulksaleV1,SampleToken,signer:deployer,args:[]}) ));
                 try {
                     await (await BulksaleClone.connect(deployer).withdrawProvidedETH()).wait();
-                } catch (e) { console.log(e.message) }
+                } catch (e) { if(isDebug) console.log(e.message) }
 
                 /* Platform withdraws fee */
                 await bl.log();
                 await Promise.all(foundationWithdrawalSpecs[i].map(async assertion => await assertion(<State>{bl,Factory,BulksaleV1,SampleToken,signer:foundation,args:[foundation.address, bl.get('Factory', 'eth')]}) ));
                 try {
                     await (await Factory.connect(foundation).withdraw(foundation.address, bl.get('Factory', 'eth') )).wait();
-                } catch (e) { console.log(e.message) }
+                } catch (e) { if(isDebug) console.log(e.message) }
 
                 await increaseTime($p.timetravel3);
                 await bl.log();
