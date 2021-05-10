@@ -5,3 +5,4 @@ dist
 test/**/*.js
 allure-results
 artifacts/build-info
+.env

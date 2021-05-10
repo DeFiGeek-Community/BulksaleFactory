@@ -180,7 +180,7 @@ contract BulksaleV1 is ITemplateContract, ReentrancyGuard {
             revert("Claimable term has been expired.");
         }
     }
-    function _calculateAllocation(uint us, uint tp, uint tda) internal returns (uint al){
+    function _calculateAllocation(uint us, uint tp, uint tda) internal pure returns (uint al){
         /* us<tp is always true and so us/tp is always zero */
         /* tda can be 1 to (2^256-1)/10^18 */
         /* (us x tda) can overflow */
