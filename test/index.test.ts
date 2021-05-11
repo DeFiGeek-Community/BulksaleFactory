@@ -31,7 +31,13 @@ const SampleToken_ABI = [
 ];
 const BULKSALEV1_ABI = [
     "function claim(address, address)",
-    "function withdrawProvidedETH()"
+    "function withdrawProvidedETH()",
+    "function withdrawERC20Onsale()",
+    "function withdrawUnclaimedERC20OnSale()",
+    "function startingAt() view returns (uint)",
+    "function closingAt() view returns (uint)",
+    "event WithdrawnOnFailed(address, uint)",
+    "event WithdrawnAfterLockDuration(address, uint)",
 ];
 
 
@@ -120,7 +126,7 @@ describe("Factory", function() {
                 /* 3. Exec scenario */
                 const tokenAddr = SampleToken.address;
                 const bulksaleAddr = BulksaleV1.address;
-                const argsTokenOnSale = getAbiArgs(templateName, {
+                const argsForClone = getAbiArgs(templateName, {
                     token: tokenAddr,
                     start: await onChainNow() + $p.startModification,
                     eventDuration: $p.eventDuration,
@@ -145,9 +151,9 @@ describe("Factory", function() {
                     await ( await SampleToken.connect(deployer).approve(Factory.address, SELLING_AMOUNT) ).wait();
                 } catch (e) { if(isDebug) console.log(e.message) }
 
-                await Promise.all(deploySpecs[i].map(async assertion => await assertion(<State>{bl,Factory,BulksaleV1,SampleToken,signer:deployer, args: [templateName, tokenAddr, SELLING_AMOUNT, argsTokenOnSale] }) ));
+                await Promise.all(deploySpecs[i].map(async assertion => await assertion(<State>{bl,Factory,BulksaleV1,SampleToken,signer:deployer, args: [templateName, tokenAddr, SELLING_AMOUNT, argsForClone] }) ));
                 try {
-                    await ( await Factory.connect(deployer).deploy(templateName, tokenAddr, SELLING_AMOUNT, argsTokenOnSale) ).wait();
+                    await ( await Factory.connect(deployer).deploy(templateName, tokenAddr, SELLING_AMOUNT, argsForClone) ).wait();
                 } catch (e) { if(isDebug) console.log(e.message) }
                 /* Deployment ended */
 
@@ -158,11 +164,11 @@ describe("Factory", function() {
 
 
                 /* Session begins */
-                let deployResult = await getLogs(Factory, 'Deployed', deployer.address);
-                let latestBulksaleCloneAddr = parseAddr(deployResult[deployResult.length-1].topics[3]);
+                let deployResult = await getLogs(Factory, 'Deployed', null);
+                let latestBulksaleCloneAddr = deployResult[deployResult.length-1].args[2];
                 const BulksaleClone = (new ethers.Contract(latestBulksaleCloneAddr, BULKSALEV1_ABI, provider));
 
-                await Promise.all(depositSpecs[i].map(async assertion => await assertion(<State>{bl,Factory,BulksaleV1,SampleToken,signer,args:[BulksaleClone.address, $p.lots.a, alice]}) ));
+                await Promise.all(depositSpecs[i].map(async assertion => await assertion(<State>{bl,Factory,BulksaleV1,BulksaleClone,SampleToken,signer,args:[$p.lots.a, alice]}) ));
                 try {
                     if(parseFloat($p.lots.a) !== 0) await sendEther(BulksaleClone.address, $p.lots.a, alice);
                 } catch (e) { if(isDebug) console.log(e.message) }
@@ -196,7 +202,7 @@ describe("Factory", function() {
                     Finalize each own result
                 */
                 /* Simply for themselves */
-                await Promise.all(claimSpecs[i].map(async assertion => assertion(<State>{bl,Factory,BulksaleV1,SampleToken,signer:alice,args:[alice.address, alice.address]}) ));
+                await Promise.all(claimSpecs[i].map(async assertion => assertion(<State>{bl,Factory,BulksaleV1,BulksaleClone,SampleToken,signer:alice,args:[alice.address, alice.address]}) ));
                 try {
                     await (await BulksaleClone.connect(alice).claim(alice.address, alice.address)).wait();
                 } catch (e) { if(isDebug) console.log(e.message) }
@@ -225,14 +231,14 @@ describe("Factory", function() {
                 } catch (e) { if(isDebug) console.log(e.message) }
 
                 /* withdraw the raised fund */
-                await Promise.all(deployerWithdrawalSpecs[i].map(async assertion => await assertion(<State>{bl,Factory,BulksaleV1,SampleToken,signer:deployer,args:[]}) ));
+                await Promise.all(deployerWithdrawalSpecs[i].map(async assertion => await assertion(<State>{bl,Factory,BulksaleV1,BulksaleClone,SampleToken,signer:deployer,args:[]}) ));
                 try {
                     await (await BulksaleClone.connect(deployer).withdrawProvidedETH()).wait();
                 } catch (e) { if(isDebug) console.log(e.message) }
 
                 /* Platform withdraws fee */
                 await bl.log();
-                await Promise.all(foundationWithdrawalSpecs[i].map(async assertion => await assertion(<State>{bl,Factory,BulksaleV1,SampleToken,signer:foundation,args:[foundation.address, bl.get('Factory', 'eth')]}) ));
+                await Promise.all(foundationWithdrawalSpecs[i].map(async assertion => await assertion(<State>{bl,Factory,BulksaleV1,BulksaleClone,SampleToken,signer:foundation,args:[foundation.address, bl.get('Factory', 'eth')]}) ));
                 try {
                     await (await Factory.connect(foundation).withdraw(foundation.address, bl.get('Factory', 'eth') )).wait();
                 } catch (e) { if(isDebug) console.log(e.message) }
@@ -242,7 +248,7 @@ describe("Factory", function() {
                 await bl.dump();
 
                 /* 4. Verify  */
-                await Promise.all(endSpecs[i].map(async assertion => await assertion(<State>{bl,Factory,BulksaleV1,SampleToken,signer:foundation,args:[]}) ));
+                await Promise.all(endSpecs[i].map(async assertion => await assertion(<State>{bl,Factory,BulksaleV1,BulksaleClone,SampleToken,signer:foundation,args:[]}) ));
             });
         })
     });

@@ -1,6 +1,6 @@
 import { BigNumber, Signer, Contract } from 'ethers';
 
-import { BalanceLogger, toERC20, getSharedSigners } from './helper';
+import { BalanceLogger, toERC20, getSharedSigners, onChainNow } from './helper';
 import { getAbiArgs, sendEther } from "./scenarioHelper";
 
 const betterexpect = (<any>expect); // TODO: better typing for waffleJest
@@ -48,6 +48,7 @@ export type State = {
   bl:BalanceLogger;
   Factory: Contract;  
   BulksaleV1: Contract;
+  BulksaleClone: Contract|undefined;
   SampleToken: Contract;
   signer: Signer;
   args: Array<any>|undefined;
@@ -401,7 +402,7 @@ export function failToAddTemplateByNonGoverner(ctx:Context):Context{
 }
 
 
-export function failDepositBeforeStartingTime(ctx:Context):Context{
+export function failDepositBeforeEventEnding(ctx:Context):Context{
     ctx.paramsSet.push({
         only: false,
         title: Object.keys(this)[ctx.paramsSet.length],
@@ -433,7 +434,7 @@ export function failDepositBeforeStartingTime(ctx:Context):Context{
     ctx.depositSpecs.push([
         async (s:State)=>{
             await betterexpect(
-                sendEther(s.args[0], s.args[1], s.args[2])
+                sendEther(s.BulksaleClone.address, s.args[0], s.args[1])
             ).toBeRevertedWith("The offering has not started yet")
         }
     ]);
@@ -444,6 +445,48 @@ export function failDepositBeforeStartingTime(ctx:Context):Context{
     return ctx
 }
 
+export function failDepositAfterEventEnding(ctx:Context):Context{
+    ctx.paramsSet.push({
+        only: false,
+        title: Object.keys(this)[ctx.paramsSet.length],
+        totalIssuance: "100000000000",
+        sellingAmount: "100000000000",
+        templateName: "BulksaleV1.sol",
+        startModification: 60*60,
+        eventDuration: 60*60*24*5,
+        lockDuration: 60*60*24*7*2,
+        expirationDuration: 60*60*24*7*4*3,
+        minEtherTarget: "0.0000333",
+        feeRatePerMil: 99,
+        timetravel1: 60*60*24*6,//skip to the end
+        timetravel2: 60*60*24*7,
+        timetravel3: 60*60,
+        lots: {
+            a: "1",
+            b: "1",
+            c: "1",
+            d: "1",
+            e: "1",
+            f: "1",
+            g: "0.0"
+        }
+    });
+    ctx.addTemplateSpecs.push([]);
+    ctx.approveSpecs.push([])
+    ctx.deploySpecs.push([]);
+    ctx.depositSpecs.push([
+        async (s:State)=>{
+            await betterexpect(
+                sendEther(s.BulksaleClone.address, s.args[0], s.args[1])
+            ).toBeRevertedWith("The offering has already ended")
+        }
+    ]);
+    ctx.claimSpecs.push([]);
+    ctx.deployerWithdrawalSpecs.push([]);
+    ctx.foundationWithdrawalSpecs.push([]);
+    ctx.endSpecs.push([]);
+    return ctx
+}
 
 
 export function failDeployWithUnregisteredTemplate(ctx:Context):Context{
@@ -490,4 +533,321 @@ export function failDeployWithUnregisteredTemplate(ctx:Context):Context{
     return ctx
 }
 
+
+
+export function failWithdrawalByDeployerBeforeEnding(ctx:Context):Context{
+    ctx.paramsSet.push({
+        only: false,
+        title: Object.keys(this)[ctx.paramsSet.length],
+        totalIssuance: "100",
+        sellingAmount: "100",
+        templateName: "BulksaleV1.sol",
+        startModification: 60*60,
+        eventDuration: 60*60*24*7*40,
+        lockDuration: 60*60*24*7*2,
+        expirationDuration: 60*60*24*7*4*3,
+        minEtherTarget: "0.0000333",
+        feeRatePerMil: 99,
+        timetravel1: 60*60*2,
+        timetravel2: 60*60*24*1,
+        timetravel3: 60*60,
+        lots: {
+            a: "1",
+            b: "1",
+            c: "1",
+            d: "1",
+            e: "1",
+            f: "1",
+            g: "0.0"
+        }
+    });
+    ctx.addTemplateSpecs.push([]);
+    ctx.approveSpecs.push([])
+    ctx.deploySpecs.push([]);
+    ctx.depositSpecs.push([]);
+    ctx.claimSpecs.push([]);
+    ctx.deployerWithdrawalSpecs.push([
+        async (s:State)=>{
+            await betterexpect(
+                s.BulksaleClone.connect(s.signer).withdrawProvidedETH()
+            ).toBeRevertedWith("The offering must be finished first.")
+        }
+
+    ]);
+    ctx.foundationWithdrawalSpecs.push([]);
+    ctx.endSpecs.push([]);
+    return ctx
+}
+
+
+
+
+export function failWithdrawalByDeployerWithInsufficientProvision(ctx:Context):Context{
+    ctx.paramsSet.push({
+        only: false,
+        title: Object.keys(this)[ctx.paramsSet.length],
+        totalIssuance: "100",
+        sellingAmount: "100",
+        templateName: "BulksaleV1.sol",
+        startModification: 60*60,
+        eventDuration: 60*60*24*5,
+        lockDuration: 60*60*24*7*2,
+        expirationDuration: 60*60*24*7*4*3,
+        minEtherTarget: "10000",
+        feeRatePerMil: 99,
+        timetravel1: 60*60*2,
+        timetravel2: 60*60*24*7,
+        timetravel3: 60*60,
+        lots: {
+            a: "1",
+            b: "1",
+            c: "1",
+            d: "1",
+            e: "1",
+            f: "1",
+            g: "0.0"
+        }
+    });
+    ctx.addTemplateSpecs.push([]);
+    ctx.approveSpecs.push([])
+    ctx.deploySpecs.push([]);
+    ctx.depositSpecs.push([]);
+    ctx.claimSpecs.push([]);
+    ctx.deployerWithdrawalSpecs.push([
+        async (s:State)=>{
+            await betterexpect(
+                s.BulksaleClone.connect(s.signer).withdrawProvidedETH()
+            ).toBeRevertedWith("The required amount has not been provided!")
+        }
+
+    ]);
+    ctx.foundationWithdrawalSpecs.push([]);
+    ctx.endSpecs.push([]);
+    return ctx
+}
+
+
+export function failToClaimExpiredEvent(ctx:Context):Context{
+    ctx.paramsSet.push({
+        only: false,
+        title: Object.keys(this)[ctx.paramsSet.length],
+        totalIssuance: "100",
+        sellingAmount: "100",
+        templateName: "BulksaleV1.sol",
+        startModification: 60*60,
+        eventDuration: 60*60*24*5,
+        lockDuration: 60*60*24*7*2,
+        expirationDuration: 60*60*24*7*4*3,
+        minEtherTarget: "1",
+        feeRatePerMil: 99,
+        timetravel1: 60*60*2,
+        timetravel2: 60*60*24*7*4*3,
+        timetravel3: 60*60,
+        lots: {
+            a: "1",
+            b: "1",
+            c: "1",
+            d: "1",
+            e: "1",
+            f: "1",
+            g: "0.0"
+        }
+    });
+    ctx.addTemplateSpecs.push([]);
+    ctx.approveSpecs.push([])
+    ctx.deploySpecs.push([]);
+    ctx.depositSpecs.push([]);
+    ctx.claimSpecs.push([
+        async (s:State)=>{
+            await betterexpect(
+                s.BulksaleClone.connect(s.signer).claim(...(<Array<any>>s.args))
+            ).toBeRevertedWith("Claimable term has been expired.")
+        }
+
+    ]);
+    ctx.deployerWithdrawalSpecs.push([]);
+    ctx.foundationWithdrawalSpecs.push([]);
+    ctx.endSpecs.push([]);
+    return ctx
+}
+
+
+
+export function failToClaimInsteadOfOtherContributerToOtherRecipient(ctx:Context):Context{
+    ctx.paramsSet.push({
+        only: false,
+        title: Object.keys(this)[ctx.paramsSet.length],
+        totalIssuance: "100",
+        sellingAmount: "100",
+        templateName: "BulksaleV1.sol",
+        startModification: 60*60,
+        eventDuration: 60*60*24*5,
+        lockDuration: 60*60*24*7*2,
+        expirationDuration: 60*60*24*7*4*3,
+        minEtherTarget: "1",
+        feeRatePerMil: 99,
+        timetravel1: 60*60*2,
+        timetravel2: 60*60*24*7*4*3,
+        timetravel3: 60*60,
+        lots: {
+            a: "1",
+            b: "1",
+            c: "1",
+            d: "1",
+            e: "1",
+            f: "1",
+            g: "0.0"
+        }
+    });
+    ctx.addTemplateSpecs.push([]);
+    ctx.approveSpecs.push([])
+    ctx.deploySpecs.push([]);
+    ctx.depositSpecs.push([]);
+    ctx.claimSpecs.push([
+        async (s:State)=>{
+            let [foundation, deployer, alice, bob, carl] = await getSharedSigners();
+            await betterexpect(
+                s.BulksaleClone.connect(alice).claim(...(bob.address, carl.address))
+            ).toBeRevertedWith("sender is claiming someone other's fund for someone other.")
+        }
+
+    ]);
+    ctx.deployerWithdrawalSpecs.push([]);
+    ctx.foundationWithdrawalSpecs.push([]);
+    ctx.endSpecs.push([]);
+    return ctx
+}
+
+export function failWithdrawUnclaimedERC20OnSale(ctx:Context):Context{
+    ctx.paramsSet.push({
+        only: false,
+        title: Object.keys(this)[ctx.paramsSet.length],
+        totalIssuance: "100",
+        sellingAmount: "100",
+        templateName: "BulksaleV1.sol",
+        startModification: 60*60,
+        eventDuration: 60*60*24*5,
+        lockDuration: 60*60*24*7*2,
+        expirationDuration: 60*60*24*7*4*3,
+        minEtherTarget: "1",
+        feeRatePerMil: 99,
+        timetravel1: 60*60*2,
+        timetravel2: 60*60*24*7*1,
+        timetravel3: 60*60,
+        lots: {
+            a: "1",
+            b: "1",
+            c: "1",
+            d: "1",
+            e: "1",
+            f: "1",
+            g: "0.0"
+        }
+    });
+    ctx.addTemplateSpecs.push([]);
+    ctx.approveSpecs.push([])
+    ctx.deploySpecs.push([]);
+    ctx.depositSpecs.push([]);
+    ctx.claimSpecs.push([]);
+    ctx.deployerWithdrawalSpecs.push([]);
+    ctx.foundationWithdrawalSpecs.push([]);
+    ctx.endSpecs.push([
+        async (s:State)=>{
+            let [foundation, deployer] = await getSharedSigners();
+            await betterexpect(
+                s.BulksaleClone.connect(deployer).withdrawUnclaimedERC20OnSale()
+            ).toBeRevertedWith("Withdrawal unavailable yet.")
+        }
+    ]);
+    return ctx
+}
+
+
+export function failWithdrawFailedERC20OnSaleWithEarlyAccess(ctx:Context):Context{
+    ctx.paramsSet.push({
+        only: false,
+        title: Object.keys(this)[ctx.paramsSet.length],
+        totalIssuance: "100",
+        sellingAmount: "100",
+        templateName: "BulksaleV1.sol",
+        startModification: 60*60,
+        eventDuration: 60*60*24*5,
+        lockDuration: 60*60*24*7*2,
+        expirationDuration: 60*60*24*7*4*3,
+        minEtherTarget: "10",
+        feeRatePerMil: 99,
+        timetravel1: 60*60*2,
+        timetravel2: 60*60*24*4,
+        timetravel3: 60*60,
+        lots: {
+            a: "1",
+            b: "1",
+            c: "1",
+            d: "1",
+            e: "1",
+            f: "1",
+            g: "0.0"
+        }
+    });
+    ctx.addTemplateSpecs.push([]);
+    ctx.approveSpecs.push([])
+    ctx.deploySpecs.push([]);
+    ctx.depositSpecs.push([]);
+    ctx.claimSpecs.push([]);
+    ctx.deployerWithdrawalSpecs.push([]);
+    ctx.foundationWithdrawalSpecs.push([]);
+    ctx.endSpecs.push([
+        async (s:State)=>{
+            let [foundation, deployer] = await getSharedSigners();
+            await betterexpect( 
+                s.BulksaleClone.connect(deployer).withdrawERC20Onsale()
+            ).toBeRevertedWith("The offering must be completed")
+        }
+    ]);
+    return ctx
+}
+
+export function failWithdrawFailedERC20OnSaleWithActuallySucceeded(ctx:Context):Context{
+    ctx.paramsSet.push({
+        only: false,
+        title: Object.keys(this)[ctx.paramsSet.length],
+        totalIssuance: "100",
+        sellingAmount: "100",
+        templateName: "BulksaleV1.sol",
+        startModification: 60*60,
+        eventDuration: 60*60*24*5,
+        lockDuration: 60*60*24*7*2,
+        expirationDuration: 60*60*24*7*4*3,
+        minEtherTarget: "1",
+        feeRatePerMil: 99,
+        timetravel1: 60*60*2,
+        timetravel2: 60*60*24*6,
+        timetravel3: 60*60,
+        lots: {
+            a: "1",
+            b: "1",
+            c: "1",
+            d: "1",
+            e: "1",
+            f: "1",
+            g: "0.0"
+        }
+    });
+    ctx.addTemplateSpecs.push([]);
+    ctx.approveSpecs.push([])
+    ctx.deploySpecs.push([]);
+    ctx.depositSpecs.push([]);
+    ctx.claimSpecs.push([]);
+    ctx.deployerWithdrawalSpecs.push([]);
+    ctx.foundationWithdrawalSpecs.push([]);
+    ctx.endSpecs.push([
+        async (s:State)=>{
+            let [foundation, deployer] = await getSharedSigners();
+            await betterexpect( 
+                s.BulksaleClone.connect(deployer).withdrawERC20Onsale()
+            ).toBeRevertedWith("The required amount has been provided!")
+        }
+    ]);
+    return ctx
+}
 

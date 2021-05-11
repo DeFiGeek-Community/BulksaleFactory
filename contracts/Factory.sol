@@ -41,6 +41,7 @@ import "./ITemplateContract.sol";
 contract Factory is ReentrancyGuard {
     mapping(string => address) public templates;
     address public governance;
+    uint nonce = 0;
     event Deployed(address indexed sender, address indexed templateAddr, address indexed deployedAddr, bytes abiArgs);
     event TemplateAdded(string indexed templateName, address indexed templateAddr, address indexed governer);
     event GovernanceChanged(address indexed oldGoverner, address indexed newGoverner);
@@ -67,7 +68,7 @@ contract Factory is ReentrancyGuard {
         require(_allowance >= sellingAmount, "allowance is not enough.");
 
         /* 2. Make a clone. */
-        deployedAddr = _createClone(templateAddr);
+        deployedAddr = _createClone(templateAddr, abiArgs);
 
         /* 3. Fund it. */
         require(
@@ -120,14 +121,16 @@ contract Factory is ReentrancyGuard {
     /*
         Internal Helpers
     */
-    function _createClone(address target) internal returns (address result) {
+    function _createClone(address target, bytes memory abiArgs) internal returns (address result) {
         bytes20 targetBytes = bytes20(target);
+        nonce += 1;
+        bytes32 salt = keccak256(abi.encodePacked(target, abiArgs, msg.sender, nonce));
         assembly {
             let clone := mload(0x40)
             mstore(clone, 0x3d602d80600a3d3981f3363d3d373d3d3d363d73000000000000000000000000)
             mstore(add(clone, 0x14), targetBytes)
             mstore(add(clone, 0x28), 0x5af43d82803e903d91602b57fd5bf30000000000000000000000000000000000)
-            result := create(0, clone, 0x37)
+            result := create2(0, clone, 0x37, salt)
         }
     }
 

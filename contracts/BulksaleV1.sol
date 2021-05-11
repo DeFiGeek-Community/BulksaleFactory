@@ -53,20 +53,20 @@ contract BulksaleV1 is ITemplateContract, ReentrancyGuard {
     */
 
     /* States in the deployment initialization */
-    uint public START;
-    uint public END = START + 7 days;
-    uint public TOTAL_DISTRIBUTE_AMOUNT = 90_360_300e18;
-    uint public MINIMAL_PROVIDE_AMOUNT = 700 ether;
-    uint public LOCK_DURATION = 30 days;
-    uint public EXPIRATION_DURATION = 180 days;
+    uint public startingAt;
+    uint public closingAt;
+    uint public totalDistributeAmount;
+    uint public minimalProvideAmount;
+    uint public lockDuration;
+    uint public expirationDuration;
     address public owner;
-    uint public FEERATEPERMIL = 30;
-    IERC20 public ERC20ONSALE;
-    /* States END */
+    uint public feeRatePerMil;
+    IERC20 public erc20onsale;
+    /* States end */
 
     struct Args {
         address token;
-        uint start;
+        uint startingAt;
         uint eventDuration;
         uint lockDuration;
         uint expirationDuration;
@@ -78,7 +78,7 @@ contract BulksaleV1 is ITemplateContract, ReentrancyGuard {
     function initialize(bytes memory abiBytes) public onlyOnce onlyFactory override returns (bool) {
         Args memory args = abi.decode(abiBytes, (Args));
 
-        require(block.timestamp <= args.start, "start must be in the future");
+        require(block.timestamp <= args.startingAt, "startingAt must be in the future");
         require(args.eventDuration >= 1 days, "event duration is too short");
         require(args.totalDistributeAmount > 0, "distribution amount is invalid");
         require(args.minimalProvideAmount > 0, "minimal provide amount is invalid");
@@ -87,15 +87,15 @@ contract BulksaleV1 is ITemplateContract, ReentrancyGuard {
         require(args.owner != address(0), "owner must be there");
         require(1 <= args.feeRatePerMil && args.feeRatePerMil < 100, "fee rate is out of range");
 
-        ERC20ONSALE = IERC20(args.token);
-        START = args.start;
-        END = args.start + args.eventDuration;
-        TOTAL_DISTRIBUTE_AMOUNT = args.totalDistributeAmount;
-        MINIMAL_PROVIDE_AMOUNT = args.minimalProvideAmount;
-        LOCK_DURATION = args.lockDuration;
-        EXPIRATION_DURATION = args.expirationDuration;
+        erc20onsale = IERC20(args.token);
+        startingAt = args.startingAt;
+        closingAt = args.startingAt + args.eventDuration;
+        totalDistributeAmount = args.totalDistributeAmount;
+        minimalProvideAmount = args.minimalProvideAmount;
+        lockDuration = args.lockDuration;
+        expirationDuration = args.expirationDuration;
         owner = args.owner;
-        FEERATEPERMIL = args.feeRatePerMil;
+        feeRatePerMil = args.feeRatePerMil;
         emit Initialized(abiBytes);
         initialized = true;
         return true;
@@ -129,25 +129,27 @@ contract BulksaleV1 is ITemplateContract, ReentrancyGuard {
 
     event Claimed(address indexed account, uint userShare, uint erc20allocation);
     event Received(address indexed account, uint amount);
+    event WithdrawnOnFailed(address indexed sender, uint balance);
+    event WithdrawnAfterLockDuration(address indexed sender, uint balance);
 
     receive() external payable {
-        require(START <= block.timestamp, "The offering has not started yet");
-        require(block.timestamp <= END, "The offering has already ended");
+        require(startingAt <= block.timestamp, "The offering has not started yet");
+        require(block.timestamp <= closingAt, "The offering has already ended");
         totalProvided += msg.value;
         provided[msg.sender] += msg.value;
         emit Received(msg.sender, msg.value);
     }
 
     function claim(address contributor, address recipient) external nonReentrant {
-        require(block.timestamp > END, "Early to claim. Sale is not finished.");
+        require(block.timestamp > closingAt, "Early to claim. Sale is not finished.");
         require(provided[contributor] > 0, "You don't have any contribution.");
 
         uint userShare = provided[contributor];
         provided[contributor] = 0;
 
-        uint erc20allocation = _calculateAllocation(userShare, totalProvided, TOTAL_DISTRIBUTE_AMOUNT);
-        bool isNotExpiredYet = block.timestamp < START + EXPIRATION_DURATION;
-        bool isTargetReached = totalProvided >= MINIMAL_PROVIDE_AMOUNT;
+        uint erc20allocation = _calculateAllocation(userShare, totalProvided, totalDistributeAmount);
+        bool isNotExpiredYet = block.timestamp < startingAt + expirationDuration;
+        bool isTargetReached = totalProvided >= minimalProvideAmount;
         bool allocationNearlyZero = erc20allocation == 0;
         if(
             isNotExpiredYet && isTargetReached && !allocationNearlyZero
@@ -161,7 +163,7 @@ contract BulksaleV1 is ITemplateContract, ReentrancyGuard {
                 ||
                 /* giving her contribution to someone other by her own will */
                 (msg.sender == contributor && contributor != recipient) ){
-                ERC20ONSALE.transfer(recipient, erc20allocation);
+                erc20onsale.transfer(recipient, erc20allocation);
                 emit Claimed(recipient, userShare, erc20allocation);
             } else {
                 revert("sender is claiming someone other's fund for someone other.");
@@ -200,6 +202,11 @@ contract BulksaleV1 is ITemplateContract, ReentrancyGuard {
 
     }
 
+
+    function ceil(uint a, uint m) internal pure returns (uint ) {
+        return ((a + m - 1) / m) * m;
+    }
+
     function withdrawProvidedETH() external onlyOwner nonReentrant {
         /*
           Finished, and enough Ether provided.
@@ -208,35 +215,37 @@ contract BulksaleV1 is ITemplateContract, ReentrancyGuard {
             Contributors: Can claim and get their own ERC-20
 
         */
-        require(END < block.timestamp, "The offering must be completed");
+        require(closingAt < block.timestamp, "The offering must be finished first.");
         require(
-            totalProvided >= MINIMAL_PROVIDE_AMOUNT,
+            totalProvided >= minimalProvideAmount,
             "The required amount has not been provided!"
         );
 
-        (bool success1,) = payable(owner).call{value: address(this).balance*(1000-FEERATEPERMIL)/1000}("");
+        (bool success1,) = payable(owner).call{value: address(this).balance*(1000-feeRatePerMil)/1000}("");
         require(success1,"transfer failed");
-        (bool success2,) = payable(factory).call{value: address(this).balance*FEERATEPERMIL/1000, gas: 25000}("");
+        (bool success2,) = payable(factory).call{value: address(this).balance*feeRatePerMil/1000, gas: 25000}("");
         require(success2,"transfer failed");
     }
 
-    function withdrawERC20ONSALE() external onlyOwner nonReentrant {
+    function withdrawERC20Onsale() external onlyOwner nonReentrant {
         /*
-          Finished, but the privided token is not enough.
+          Finished, but the privided token is not enough. (Failed sale)
             
             Owner: Withdraws ERC-20
             Contributors: Claim and get back Ether
 
         */
-        require(END < block.timestamp, "The offering must be completed");
+        require(closingAt < block.timestamp, "The offering must be completed");
         require(
-            totalProvided < MINIMAL_PROVIDE_AMOUNT,
+            totalProvided < minimalProvideAmount,
             "The required amount has been provided!"
         );
-        ERC20ONSALE.transfer(owner, ERC20ONSALE.balanceOf(address(this)));
+        uint _balance = erc20onsale.balanceOf(address(this));
+        erc20onsale.transfer(owner, _balance);
+        emit WithdrawnOnFailed(msg.sender, _balance);
     }
 
-    function withdrawUnclaimedERC20ONSALE() external onlyOwner nonReentrant {
+    function withdrawUnclaimedERC20OnSale() external onlyOwner nonReentrant {
         /*
           Finished, passed lock duration, and still there're unsold ERC-20.
             
@@ -244,7 +253,9 @@ contract BulksaleV1 is ITemplateContract, ReentrancyGuard {
             Contributors: Already claimed and getting their own ERC-20
 
         */
-        require(END + LOCK_DURATION < block.timestamp, "Withdrawal unavailable yet");
-        ERC20ONSALE.transfer(owner, ERC20ONSALE.balanceOf(address(this)));
-    }
+        require(closingAt + lockDuration < block.timestamp, "Withdrawal unavailable yet.");
+        uint _balance = erc20onsale.balanceOf(address(this));
+        erc20onsale.transfer(owner, _balance);
+        emit WithdrawnAfterLockDuration(msg.sender, _balance);
+   }
 }

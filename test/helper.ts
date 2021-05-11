@@ -64,8 +64,8 @@ export function parseInteger(bytes){
   return parseInt(bytes);
 }
 
-export async function getLogs(Contract:Contract, event, arg, from=0, to=100){
-  return Contract.queryFilter(Contract.filters[event](arg), from, to);
+export async function getLogs(Contract:Contract, event, arg){
+  return Contract.queryFilter(Contract.filters[event](arg), 0, (await getLatestBlock()).number);
 }
 
 const codec = new ethers.utils.AbiCoder();
@@ -220,10 +220,15 @@ export function toERC20(amount:string, decimal:number=18): BigNumber{
 export function toFloat(amount:string, decimal:number=18):string{
   return ethers.utils.formatUnits(amount, decimal);
 }
-export async function onChainNow(){
+
+export async function getLatestBlock(){
   const [first] = await getSharedSigners();
   const provider = first.provider;
   const blockNumber:number = await provider.getBlockNumber();
   const block = await provider.getBlock( blockNumber );
+  return block;
+}
+export async function onChainNow(){
+  const block = await getLatestBlock();
   return block.timestamp;
 }

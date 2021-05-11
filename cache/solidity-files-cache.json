@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/0xmotoko/code/bulksale/contracts/BulksaleV1.sol": {
-      "lastModificationDate": 1620623808891,
-      "contentHash": "311f74583ebef18ea1c777e6bd264ad6",
+      "lastModificationDate": 1620734967291,
+      "contentHash": "8af989f9c6564f810a859bf07a29a753",
       "sourceName": "contracts/BulksaleV1.sol",
       "solcConfig": {
         "version": "0.8.3",
@@ -301,8 +301,8 @@
       ]
     },
     "/Users/0xmotoko/code/bulksale/contracts/Factory.sol": {
-      "lastModificationDate": 1620616999220,
-      "contentHash": "653f5e71db11b3e92fe9b55511fb3ac4",
+      "lastModificationDate": 1620730887700,
+      "contentHash": "0fe327037f9dec1bb58cc2ee5fdde486",
       "sourceName": "contracts/Factory.sol",
       "solcConfig": {
         "version": "0.8.3",
