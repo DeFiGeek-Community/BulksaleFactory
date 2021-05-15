@@ -1,7 +1,8 @@
 import { BigNumber, Signer, Contract } from 'ethers';
 
-import { BalanceLogger, toERC20, getSharedSigners, onChainNow } from './helper';
-import { getAbiArgs, sendEther } from "./scenarioHelper";
+import { toERC20, getSharedSigners, onChainNow } from './helper';
+import { sendEther } from "./scenarioHelper";
+import { BalanceLogger } from '../src/BalanceLogger';
 
 const betterexpect = (<any>expect); // TODO: better typing for waffleJest
 
@@ -33,6 +34,8 @@ type Params = {
 }
 type Context = {
     paramsSet:Array<Params>;
+    addTokenTemplateSpecs:Array<ParameterizedTestCase>;
+    tokenCloneDeploySpecs:Array<ParameterizedTestCase>;
     addTemplateSpecs:Array<ParameterizedTestCase>;
     approveSpecs:Array<ParameterizedTestCase>;
     deploySpecs:Array<ParameterizedTestCase>;
@@ -47,9 +50,8 @@ type Assertion = (s:State) => any;
 export type State = {
   bl:BalanceLogger;
   Factory: Contract;  
-  BulksaleV1: Contract;
-  BulksaleClone: Contract|undefined;
-  SampleToken: Contract;
+  BulksaleV1: Contract|undefined;
+  SampleToken: Contract|undefined;
   signer: Signer;
   args: Array<any>|undefined;
 }
@@ -58,9 +60,12 @@ export type State = {
 
 
 
-export function successWithModerateSetting(ctx:Context|undefined=undefined):Context{
+export function successWithModerateSetting(ctx:Context|undefined=undefined, type:string):Context{
+    const title = Object.keys(this)[0]
     if(!ctx) ctx = {
         paramsSet: [],
+        addTokenTemplateSpecs: [],
+        tokenCloneDeploySpecs: [],
         addTemplateSpecs: [],
         approveSpecs: [],
         deploySpecs: [],
@@ -73,7 +78,7 @@ export function successWithModerateSetting(ctx:Context|undefined=undefined):Cont
 
     ctx.paramsSet.push({
         only: false,
-        title: Object.keys(this)[ctx.paramsSet.length],
+        title: title,
         totalIssuance: "1000000000.322288888322288888",
         sellingAmount: "300000000.532312999532312999",
         templateName: "BulksaleV1.sol",
@@ -96,6 +101,8 @@ export function successWithModerateSetting(ctx:Context|undefined=undefined):Cont
             g: "0.0"
         }
     });
+    ctx.addTokenTemplateSpecs.push([]);
+    ctx.tokenCloneDeploySpecs.push([]);
     ctx.addTemplateSpecs.push([]);
     ctx.approveSpecs.push([]);
     ctx.deploySpecs.push([]);
@@ -134,10 +141,11 @@ export function successWithModerateSetting(ctx:Context|undefined=undefined):Cont
     return ctx;
 }
 
-export function successWithArtNFTScenario(ctx:Context):Context{
+export function successWithArtNFTScenario(ctx:Context, type:string):Context{
+    const title = Object.keys(this)[ctx.paramsSet.length]
     ctx.paramsSet.push({
         only: false,
-        title: Object.keys(this)[ctx.paramsSet.length],
+        title: title,
         totalIssuance: "0.000000000000001",//10^15 (or, 1000 tokens for decimal=0 token)
         sellingAmount: "0.000000000000001",
         templateName: "BulksaleV1.sol",
@@ -160,6 +168,8 @@ export function successWithArtNFTScenario(ctx:Context):Context{
             g: "0.0"
         }
     });
+    ctx.addTokenTemplateSpecs.push([]);
+    ctx.tokenCloneDeploySpecs.push([]);
     ctx.addTemplateSpecs.push([]);
     ctx.approveSpecs.push([]);
     ctx.deploySpecs.push([]);
@@ -200,10 +210,11 @@ export function successWithArtNFTScenario(ctx:Context):Context{
 
 
 
-export function successWithUpperBound(ctx:Context):Context{
+export function successWithUpperBound(ctx:Context, type:string):Context{
+    const title = Object.keys(this)[ctx.paramsSet.length]
     ctx.paramsSet.push({
         only: false,
-        title: Object.keys(this)[ctx.paramsSet.length],
+        title: title,
         totalIssuance: "115792089237316195423570985008687907853269984665640564039457",// (2^256-1)/(10^18)
         sellingAmount: "115792089237316195423570985008687907853269984665640564039457",
         templateName: "BulksaleV1.sol",
@@ -226,6 +237,8 @@ export function successWithUpperBound(ctx:Context):Context{
             g: "0.0"
         }
     });
+    ctx.addTokenTemplateSpecs.push([]);
+    ctx.tokenCloneDeploySpecs.push([]);
     ctx.addTemplateSpecs.push([]);
     ctx.approveSpecs.push([]);
     ctx.deploySpecs.push([]);
@@ -265,101 +278,119 @@ export function successWithUpperBound(ctx:Context):Context{
 }
 
 
-export function failApprovalWithZeroSupply(ctx:Context):Context{
-    ctx.paramsSet.push({
-        only: false,
-        title: Object.keys(this)[ctx.paramsSet.length],
-        totalIssuance: "100",
-        sellingAmount: "0",
-        templateName: "BulksaleV1.sol",
-        startModification: 60*60,
-        eventDuration: 60*60*24*5,
-        lockDuration: 60*60*24*7*2,
-        expirationDuration: 60*60*24*7*4*3,
-        minEtherTarget: "0.0000333",
-        feeRatePerMil: 99,
-        timetravel1: 60*60*2,
-        timetravel2: 60*60*24*7,
-        timetravel3: 60*60,
-        lots: {
-            a: "1",
-            b: "1",
-            c: "1",
-            d: "1",
-            e: "1",
-            f: "1",
-            g: "0.0"
-        }
-    });
-    ctx.addTemplateSpecs.push([]);
-    ctx.approveSpecs.push([
-        async (s:State)=>{
-            await betterexpect(s.SampleToken
-                .connect(s.signer)
-                .approve( ...(<Array<any>>s.args) )
-            ).toBeRevertedWith("Amount is zero.")
-        }
-    ])
-    ctx.deploySpecs.push([]);
-    ctx.depositSpecs.push([]);
-    ctx.claimSpecs.push([]);
-    ctx.deployerWithdrawalSpecs.push([]);
-    ctx.foundationWithdrawalSpecs.push([]);
-    ctx.endSpecs.push([]);
+export function failApprovalWithZeroSupply(ctx:Context, type:string):Context{
+    if(type === "Bulksale"){
+        const title = Object.keys(this)[ctx.paramsSet.length]
+        ctx.paramsSet.push({
+            only: false,
+            title: title,
+            totalIssuance: "100",
+            sellingAmount: "0",
+            templateName: "BulksaleV1.sol",
+            startModification: 60*60,
+            eventDuration: 60*60*24*5,
+            lockDuration: 60*60*24*7*2,
+            expirationDuration: 60*60*24*7*4*3,
+            minEtherTarget: "0.0000333",
+            feeRatePerMil: 99,
+            timetravel1: 60*60*2,
+            timetravel2: 60*60*24*7,
+            timetravel3: 60*60,
+            lots: {
+                a: "1",
+                b: "1",
+                c: "1",
+                d: "1",
+                e: "1",
+                f: "1",
+                g: "0.0"
+            }
+        });
+        ctx.addTokenTemplateSpecs.push([]);
+        ctx.tokenCloneDeploySpecs.push([]);
+        ctx.addTemplateSpecs.push([]);
+        ctx.approveSpecs.push([
+            async (s:State)=>{
+                await betterexpect(s.SampleToken
+                    .connect(s.signer)
+                    .approve( ...(<Array<any>>s.args) )
+                ).toBeRevertedWith("Amount is zero.")
+            }
+        ])
+        ctx.deploySpecs.push([]);
+        ctx.depositSpecs.push([]);
+        ctx.claimSpecs.push([]);
+        ctx.deployerWithdrawalSpecs.push([]);
+        ctx.foundationWithdrawalSpecs.push([]);
+        ctx.endSpecs.push([]);
+    } else if (type === "TokenTemplate") {
+    } else {
+        throw new Error(`${type} is not anticipated test type.`);
+    }
+    return ctx
+
+}
+
+
+export function failDeployWithZeroSupply(ctx:Context, type:string):Context{
+    if(type === "Bulksale"){
+        const title = Object.keys(this)[ctx.paramsSet.length]
+        ctx.paramsSet.push({
+            only: false,
+            title: title,
+            totalIssuance: "100",
+            sellingAmount: "0",
+            templateName: "BulksaleV1.sol",
+            startModification: 60*60,
+            eventDuration: 60*60*24*5,
+            lockDuration: 60*60*24*7*2,
+            expirationDuration: 60*60*24*7*4*3,
+            minEtherTarget: "0.0000333",
+            feeRatePerMil: 99,
+            timetravel1: 60*60*2,
+            timetravel2: 60*60*24*7,
+            timetravel3: 60*60,
+            lots: {
+                a: "1",
+                b: "1",
+                c: "1",
+                d: "1",
+                e: "1",
+                f: "1",
+                g: "0.0"
+            }
+        });
+        ctx.addTokenTemplateSpecs.push([]);
+        ctx.tokenCloneDeploySpecs.push([]);
+        ctx.addTemplateSpecs.push([]);
+        ctx.approveSpecs.push([])
+        ctx.deploySpecs.push([
+            async (s:State)=>{
+                await betterexpect(s.Factory
+                    .connect(s.signer)
+                    .deploy( ...(<Array<any>>s.args) )
+                ).toBeRevertedWith("Having an event without tokens are not permitted.")
+            }
+        ]);
+        ctx.depositSpecs.push([]);
+        ctx.claimSpecs.push([]);
+        ctx.deployerWithdrawalSpecs.push([]);
+        ctx.foundationWithdrawalSpecs.push([]);
+        ctx.endSpecs.push([]);
+    } else if (type === "TokenTemplate") {
+    } else {
+        throw new Error(`${type} is not anticipated test type.`);
+    }
     return ctx
 }
 
 
-export function failDeployWithZeroSupply(ctx:Context):Context{
+
+export function failToAddTemplateByNonGoverner(ctx:Context, type:string):Context{
+    const title = Object.keys(this)[ctx.paramsSet.length]
     ctx.paramsSet.push({
         only: false,
-        title: Object.keys(this)[ctx.paramsSet.length],
-        totalIssuance: "100",
-        sellingAmount: "0",
-        templateName: "BulksaleV1.sol",
-        startModification: 60*60,
-        eventDuration: 60*60*24*5,
-        lockDuration: 60*60*24*7*2,
-        expirationDuration: 60*60*24*7*4*3,
-        minEtherTarget: "0.0000333",
-        feeRatePerMil: 99,
-        timetravel1: 60*60*2,
-        timetravel2: 60*60*24*7,
-        timetravel3: 60*60,
-        lots: {
-            a: "1",
-            b: "1",
-            c: "1",
-            d: "1",
-            e: "1",
-            f: "1",
-            g: "0.0"
-        }
-    });
-    ctx.addTemplateSpecs.push([]);
-    ctx.approveSpecs.push([])
-    ctx.deploySpecs.push([
-        async (s:State)=>{
-            await betterexpect(s.Factory
-                .connect(s.signer)
-                .deploy( ...(<Array<any>>s.args) )
-            ).toBeRevertedWith("Having an event without tokens are not permitted.")
-        }
-    ]);
-    ctx.depositSpecs.push([]);
-    ctx.claimSpecs.push([]);
-    ctx.deployerWithdrawalSpecs.push([]);
-    ctx.foundationWithdrawalSpecs.push([]);
-    ctx.endSpecs.push([]);
-    return ctx
-}
-
-
-
-export function failToAddTemplateByNonGoverner(ctx:Context):Context{
-    ctx.paramsSet.push({
-        only: false,
-        title: Object.keys(this)[ctx.paramsSet.length],
+        title: title,
         totalIssuance: "100000000000",
         sellingAmount: "100000000000",
         templateName: "BulksaleV1.sol",
@@ -382,6 +413,8 @@ export function failToAddTemplateByNonGoverner(ctx:Context):Context{
             g: "0.0"
         }
     });
+    ctx.addTokenTemplateSpecs.push([]);
+    ctx.tokenCloneDeploySpecs.push([]);
     ctx.addTemplateSpecs.push([
         async (s:State)=>{
             const [foundation, nonFoundation] = await getSharedSigners();
@@ -402,10 +435,11 @@ export function failToAddTemplateByNonGoverner(ctx:Context):Context{
 }
 
 
-export function failDepositBeforeEventEnding(ctx:Context):Context{
+export function failDepositBeforeEventEnding(ctx:Context, type:string):Context{
+    const title = Object.keys(this)[ctx.paramsSet.length]
     ctx.paramsSet.push({
         only: false,
-        title: Object.keys(this)[ctx.paramsSet.length],
+        title: title,
         totalIssuance: "100000000000",
         sellingAmount: "100000000000",
         templateName: "BulksaleV1.sol",
@@ -428,13 +462,15 @@ export function failDepositBeforeEventEnding(ctx:Context):Context{
             g: "0.0"
         }
     });
+    ctx.addTokenTemplateSpecs.push([]);
+    ctx.tokenCloneDeploySpecs.push([]);
     ctx.addTemplateSpecs.push([]);
     ctx.approveSpecs.push([])
     ctx.deploySpecs.push([]);
     ctx.depositSpecs.push([
         async (s:State)=>{
             await betterexpect(
-                sendEther(s.BulksaleClone.address, s.args[0], s.args[1])
+                sendEther(s.BulksaleV1.address, s.args[0], s.args[1])
             ).toBeRevertedWith("The offering has not started yet")
         }
     ]);
@@ -445,10 +481,11 @@ export function failDepositBeforeEventEnding(ctx:Context):Context{
     return ctx
 }
 
-export function failDepositAfterEventEnding(ctx:Context):Context{
+export function failDepositAfterEventEnding(ctx:Context, type:string):Context{
+    const title = Object.keys(this)[ctx.paramsSet.length]
     ctx.paramsSet.push({
         only: false,
-        title: Object.keys(this)[ctx.paramsSet.length],
+        title: title,
         totalIssuance: "100000000000",
         sellingAmount: "100000000000",
         templateName: "BulksaleV1.sol",
@@ -471,13 +508,15 @@ export function failDepositAfterEventEnding(ctx:Context):Context{
             g: "0.0"
         }
     });
+    ctx.addTokenTemplateSpecs.push([]);
+    ctx.tokenCloneDeploySpecs.push([]);
     ctx.addTemplateSpecs.push([]);
     ctx.approveSpecs.push([])
     ctx.deploySpecs.push([]);
     ctx.depositSpecs.push([
         async (s:State)=>{
             await betterexpect(
-                sendEther(s.BulksaleClone.address, s.args[0], s.args[1])
+                sendEther(s.BulksaleV1.address, s.args[0], s.args[1])
             ).toBeRevertedWith("The offering has already ended")
         }
     ]);
@@ -489,10 +528,11 @@ export function failDepositAfterEventEnding(ctx:Context):Context{
 }
 
 
-export function failDeployWithUnregisteredTemplate(ctx:Context):Context{
+export function failDeployWithUnregisteredTemplate(ctx:Context, type:string):Context{
+    const title = Object.keys(this)[ctx.paramsSet.length]
     ctx.paramsSet.push({
         only: false,
-        title: Object.keys(this)[ctx.paramsSet.length],
+        title: title,
         totalIssuance: "100",
         sellingAmount: "100",
         templateName: "BulksaleV1.sol",
@@ -515,6 +555,8 @@ export function failDeployWithUnregisteredTemplate(ctx:Context):Context{
             g: "0.0"
         }
     });
+    ctx.addTokenTemplateSpecs.push([]);
+    ctx.tokenCloneDeploySpecs.push([]);
     ctx.addTemplateSpecs.push([]);
     ctx.approveSpecs.push([])
     ctx.deploySpecs.push([
@@ -535,10 +577,11 @@ export function failDeployWithUnregisteredTemplate(ctx:Context):Context{
 
 
 
-export function failWithdrawalByDeployerBeforeEnding(ctx:Context):Context{
+export function failWithdrawalByDeployerBeforeEnding(ctx:Context, type:string):Context{
+    const title = Object.keys(this)[ctx.paramsSet.length]
     ctx.paramsSet.push({
         only: false,
-        title: Object.keys(this)[ctx.paramsSet.length],
+        title: title,
         totalIssuance: "100",
         sellingAmount: "100",
         templateName: "BulksaleV1.sol",
@@ -561,6 +604,8 @@ export function failWithdrawalByDeployerBeforeEnding(ctx:Context):Context{
             g: "0.0"
         }
     });
+    ctx.addTokenTemplateSpecs.push([]);
+    ctx.tokenCloneDeploySpecs.push([]);
     ctx.addTemplateSpecs.push([]);
     ctx.approveSpecs.push([])
     ctx.deploySpecs.push([]);
@@ -569,7 +614,7 @@ export function failWithdrawalByDeployerBeforeEnding(ctx:Context):Context{
     ctx.deployerWithdrawalSpecs.push([
         async (s:State)=>{
             await betterexpect(
-                s.BulksaleClone.connect(s.signer).withdrawProvidedETH()
+                s.BulksaleV1.connect(s.signer).withdrawProvidedETH()
             ).toBeRevertedWith("The offering must be finished first.")
         }
 
@@ -582,10 +627,11 @@ export function failWithdrawalByDeployerBeforeEnding(ctx:Context):Context{
 
 
 
-export function failWithdrawalByDeployerWithInsufficientProvision(ctx:Context):Context{
+export function failWithdrawalByDeployerWithInsufficientProvision(ctx:Context, type:string):Context{
+    const title = Object.keys(this)[ctx.paramsSet.length]
     ctx.paramsSet.push({
         only: false,
-        title: Object.keys(this)[ctx.paramsSet.length],
+        title: title,
         totalIssuance: "100",
         sellingAmount: "100",
         templateName: "BulksaleV1.sol",
@@ -608,6 +654,8 @@ export function failWithdrawalByDeployerWithInsufficientProvision(ctx:Context):C
             g: "0.0"
         }
     });
+    ctx.addTokenTemplateSpecs.push([]);
+    ctx.tokenCloneDeploySpecs.push([]);
     ctx.addTemplateSpecs.push([]);
     ctx.approveSpecs.push([])
     ctx.deploySpecs.push([]);
@@ -616,7 +664,7 @@ export function failWithdrawalByDeployerWithInsufficientProvision(ctx:Context):C
     ctx.deployerWithdrawalSpecs.push([
         async (s:State)=>{
             await betterexpect(
-                s.BulksaleClone.connect(s.signer).withdrawProvidedETH()
+                s.BulksaleV1.connect(s.signer).withdrawProvidedETH()
             ).toBeRevertedWith("The required amount has not been provided!")
         }
 
@@ -627,10 +675,11 @@ export function failWithdrawalByDeployerWithInsufficientProvision(ctx:Context):C
 }
 
 
-export function failToClaimExpiredEvent(ctx:Context):Context{
+export function failToClaimExpiredEvent(ctx:Context, type:string):Context{
+    const title = Object.keys(this)[ctx.paramsSet.length]
     ctx.paramsSet.push({
         only: false,
-        title: Object.keys(this)[ctx.paramsSet.length],
+        title: title,
         totalIssuance: "100",
         sellingAmount: "100",
         templateName: "BulksaleV1.sol",
@@ -653,6 +702,8 @@ export function failToClaimExpiredEvent(ctx:Context):Context{
             g: "0.0"
         }
     });
+    ctx.addTokenTemplateSpecs.push([]);
+    ctx.tokenCloneDeploySpecs.push([]);
     ctx.addTemplateSpecs.push([]);
     ctx.approveSpecs.push([])
     ctx.deploySpecs.push([]);
@@ -660,7 +711,7 @@ export function failToClaimExpiredEvent(ctx:Context):Context{
     ctx.claimSpecs.push([
         async (s:State)=>{
             await betterexpect(
-                s.BulksaleClone.connect(s.signer).claim(...(<Array<any>>s.args))
+                s.BulksaleV1.connect(s.signer).claim(...(<Array<any>>s.args))
             ).toBeRevertedWith("Claimable term has been expired.")
         }
 
@@ -673,10 +724,11 @@ export function failToClaimExpiredEvent(ctx:Context):Context{
 
 
 
-export function failToClaimInsteadOfOtherContributerToOtherRecipient(ctx:Context):Context{
+export function failToClaimInsteadOfOtherContributerToOtherRecipient(ctx:Context, type:string):Context{
+    const title = Object.keys(this)[ctx.paramsSet.length]
     ctx.paramsSet.push({
         only: false,
-        title: Object.keys(this)[ctx.paramsSet.length],
+        title: title,
         totalIssuance: "100",
         sellingAmount: "100",
         templateName: "BulksaleV1.sol",
@@ -699,6 +751,8 @@ export function failToClaimInsteadOfOtherContributerToOtherRecipient(ctx:Context
             g: "0.0"
         }
     });
+    ctx.addTokenTemplateSpecs.push([]);
+    ctx.tokenCloneDeploySpecs.push([]);
     ctx.addTemplateSpecs.push([]);
     ctx.approveSpecs.push([])
     ctx.deploySpecs.push([]);
@@ -707,7 +761,7 @@ export function failToClaimInsteadOfOtherContributerToOtherRecipient(ctx:Context
         async (s:State)=>{
             let [foundation, deployer, alice, bob, carl] = await getSharedSigners();
             await betterexpect(
-                s.BulksaleClone.connect(alice).claim(...(bob.address, carl.address))
+                s.BulksaleV1.connect(alice).claim(...(bob.address, carl.address))
             ).toBeRevertedWith("sender is claiming someone other's fund for someone other.")
         }
 
@@ -718,10 +772,11 @@ export function failToClaimInsteadOfOtherContributerToOtherRecipient(ctx:Context
     return ctx
 }
 
-export function failWithdrawUnclaimedERC20OnSale(ctx:Context):Context{
+export function failWithdrawUnclaimedERC20OnSale(ctx:Context, type:string):Context{
+    const title = Object.keys(this)[ctx.paramsSet.length]
     ctx.paramsSet.push({
         only: false,
-        title: Object.keys(this)[ctx.paramsSet.length],
+        title: title,
         totalIssuance: "100",
         sellingAmount: "100",
         templateName: "BulksaleV1.sol",
@@ -744,6 +799,8 @@ export function failWithdrawUnclaimedERC20OnSale(ctx:Context):Context{
             g: "0.0"
         }
     });
+    ctx.addTokenTemplateSpecs.push([]);
+    ctx.tokenCloneDeploySpecs.push([]);
     ctx.addTemplateSpecs.push([]);
     ctx.approveSpecs.push([])
     ctx.deploySpecs.push([]);
@@ -755,7 +812,7 @@ export function failWithdrawUnclaimedERC20OnSale(ctx:Context):Context{
         async (s:State)=>{
             let [foundation, deployer] = await getSharedSigners();
             await betterexpect(
-                s.BulksaleClone.connect(deployer).withdrawUnclaimedERC20OnSale()
+                s.BulksaleV1.connect(deployer).withdrawUnclaimedERC20OnSale()
             ).toBeRevertedWith("Withdrawal unavailable yet.")
         }
     ]);
@@ -763,10 +820,11 @@ export function failWithdrawUnclaimedERC20OnSale(ctx:Context):Context{
 }
 
 
-export function failWithdrawFailedERC20OnSaleWithEarlyAccess(ctx:Context):Context{
+export function failWithdrawFailedERC20OnSaleWithEarlyAccess(ctx:Context, type:string):Context{
+    const title = Object.keys(this)[ctx.paramsSet.length]
     ctx.paramsSet.push({
         only: false,
-        title: Object.keys(this)[ctx.paramsSet.length],
+        title: title,
         totalIssuance: "100",
         sellingAmount: "100",
         templateName: "BulksaleV1.sol",
@@ -789,6 +847,8 @@ export function failWithdrawFailedERC20OnSaleWithEarlyAccess(ctx:Context):Contex
             g: "0.0"
         }
     });
+    ctx.addTokenTemplateSpecs.push([]);
+    ctx.tokenCloneDeploySpecs.push([]);
     ctx.addTemplateSpecs.push([]);
     ctx.approveSpecs.push([])
     ctx.deploySpecs.push([]);
@@ -800,17 +860,18 @@ export function failWithdrawFailedERC20OnSaleWithEarlyAccess(ctx:Context):Contex
         async (s:State)=>{
             let [foundation, deployer] = await getSharedSigners();
             await betterexpect( 
-                s.BulksaleClone.connect(deployer).withdrawERC20Onsale()
+                s.BulksaleV1.connect(deployer).withdrawERC20Onsale()
             ).toBeRevertedWith("The offering must be completed")
         }
     ]);
     return ctx
 }
 
-export function failWithdrawFailedERC20OnSaleWithActuallySucceeded(ctx:Context):Context{
+export function failWithdrawFailedERC20OnSaleWithActuallySucceeded(ctx:Context, type:string):Context{
+    const title = Object.keys(this)[ctx.paramsSet.length]
     ctx.paramsSet.push({
         only: false,
-        title: Object.keys(this)[ctx.paramsSet.length],
+        title: title,
         totalIssuance: "100",
         sellingAmount: "100",
         templateName: "BulksaleV1.sol",
@@ -833,6 +894,8 @@ export function failWithdrawFailedERC20OnSaleWithActuallySucceeded(ctx:Context):
             g: "0.0"
         }
     });
+    ctx.addTokenTemplateSpecs.push([]);
+    ctx.tokenCloneDeploySpecs.push([]);
     ctx.addTemplateSpecs.push([]);
     ctx.approveSpecs.push([])
     ctx.deploySpecs.push([]);
@@ -844,7 +907,7 @@ export function failWithdrawFailedERC20OnSaleWithActuallySucceeded(ctx:Context):
         async (s:State)=>{
             let [foundation, deployer] = await getSharedSigners();
             await betterexpect( 
-                s.BulksaleClone.connect(deployer).withdrawERC20Onsale()
+                s.BulksaleV1.connect(deployer).withdrawERC20Onsale()
             ).toBeRevertedWith("The required amount has been provided!")
         }
     ]);

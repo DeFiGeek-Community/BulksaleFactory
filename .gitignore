@@ -7,3 +7,5 @@ allure-results
 artifacts/build-info
 .env
 cache
+.localFactoryAddress
+.upstream*Address
