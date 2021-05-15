@@ -63,7 +63,7 @@ contract BulksaleV1 is ITemplateContract, ReentrancyGuard {
     uint public feeRatePerMil;
     IERC20 public erc20onsale;
     /* States end */
-
+    
     struct Args {
         address token;
         uint startingAt;

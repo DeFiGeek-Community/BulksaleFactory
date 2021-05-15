@@ -42,7 +42,8 @@ contract Factory is ReentrancyGuard {
     mapping(string => address) public templates;
     address public governance;
     uint nonce = 0;
-    event Deployed(address indexed sender, address indexed templateAddr, address indexed deployedAddr, bytes abiArgs);
+    event Deployed(address indexed sender, string indexed templateName, address indexed deployedAddr, bytes abiArgs);
+    event TokenCloneDeployed(address indexed sender, string indexed templateName, address indexed deployedAddr, bytes abiArgs);
     event TemplateAdded(string indexed templateName, address indexed templateAddr, address indexed governer);
     event GovernanceChanged(address indexed oldGoverner, address indexed newGoverner);
     event Received(address indexed sender, uint fee, uint treasury);
@@ -82,7 +83,27 @@ contract Factory is ReentrancyGuard {
             , "Failed to initialize the cloned contract.");
 
         
-        emit Deployed(msg.sender, templateAddr, deployedAddr, abiArgs);
+        emit Deployed(msg.sender, templateName, deployedAddr, abiArgs);
+    }
+    function deployTokenClone(string memory templateName, bytes memory abiArgs) public returns (address deployedAddr) {
+
+        /* 1. Args must be non-empty and allowance is enough. */
+        require(bytes(templateName).length > 0, "Empty string.");
+
+        address templateAddr = templates[templateName];
+
+        require(templateAddr != address(0), "No such template in the list.");
+
+        /* 2. Make a clone. */
+        deployedAddr = _createClone(templateAddr, abiArgs);
+
+        /* 3. Initialize it. */
+        require(
+            ITemplateContract(deployedAddr).initialize(abiArgs)
+            , "Failed to initialize the cloned contract.");
+
+        
+        emit TokenCloneDeployed(msg.sender, templateName, deployedAddr, abiArgs);
     }
 
     function addTemplate(string memory templateName, address templateAddr /* Dear governer; deploy it beforehand. */) public onlyGovernance {

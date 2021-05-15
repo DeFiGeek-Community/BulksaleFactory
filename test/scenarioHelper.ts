@@ -6,8 +6,32 @@ import { summon, getSharedProvider, getSharedSigners,
 import * as specs from './parameterizedSpecs';
 
 
+export function getTokenAbiArgs(templateName, {
+    initialSupply,
+    name,
+    symbol,
+    owner
+}:{
+    initialSupply: BigNumber,
+    name: string,
+    symbol: string,
+    owner: string
+}){
+    let types;
+    if(templateName == 'OwnableToken.sol'){
+        types = ["uint", "string", "string", "address"]
+    } else {
+        console.trace(`${templateName} is not planned yet. Add your typedef for abi here.`);
+        throw 1;
+    }
+    return encode(
+        types,
+        [initialSupply, name, symbol, owner]
+    );
 
-export function getAbiArgs(templateName, {
+}
+
+export function getBulksaleAbiArgs(templateName, {
     token,
     start,
     eventDuration,
@@ -62,11 +86,11 @@ export async function sendEther(to:any, amountStr:string, signer){
 }
 
 let ctx;
-export function parameterizedSpecs(){
-    ctx = specs.successWithModerateSetting();
+export function parameterizedSpecs(type){
+    ctx = specs.successWithModerateSetting(undefined, type);
     let specKeys = Object.keys(specs);
-    specKeys.shift();
-    specKeys.map(specName=> ctx = specs[specName](ctx) );
+    specKeys.shift(); // remove initial spec as we've called it above
+    specKeys.map(specName=> ctx = specs[specName](ctx, type) ); // run spec with context and override ctx
     return ctx;
 }
 
