@@ -2,29 +2,46 @@ import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
 import {parseEther} from 'ethers/lib/utils';
 import {
-  preserveLocalFactoryAddress,
-  preserveUpstreamFactoryAddress,
-  hardcodeFactoryAddress
+  deploy,
+  goToEmbededMode,
+  hardcodeFactoryAddress,
+  singletonProvider,
+  getFoundation,
+  getDeployer,
+  extractEmbeddedFactoryAddress,
+  recoverFactoryAddress,
+  setProvider,
+  isInitMode,
+  isEmbeddedMode,
+  backToInitMode,
 } from '../src/deployUtil';
+import {Wallet} from 'ethers';
+
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const {deployments, getNamedAccounts} = hre;
-  const {deploy} = deployments;
-
-  const { foundation, deployer } = await getNamedAccounts();
+  if( !isInitMode() ) return;
+  const { ethers } = hre;
+  const {
+    getDefaultProvider, getContractFactory,
+    Contract, BigNumber, Signer, getSigners,
+  } = ethers;
+  setProvider({getDefaultProvider});
+  const foundation = getFoundation();
+  const deployer = getDeployer();
 
   const factory = await deploy('Factory', {
     from: foundation,
-    args: [foundation],
+    args: [(<Wallet>foundation).address],
     log: true,
+    getContractFactory
   });
 
-  preserveLocalFactoryAddress("BulksaleV1");
+  goToEmbededMode();
   hardcodeFactoryAddress("BulksaleV1", factory.address);
   hardcodeFactoryAddress("OwnableToken", factory.address);
-  preserveUpstreamFactoryAddress("BulksaleV1");
+
+  console.log("\nPlanned checkpoint. You can continue by running the same command again.\n");
+  process.exit(0);
 };
 export default func;
 func.tags = ['Factory'];
-
-

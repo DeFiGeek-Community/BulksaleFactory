@@ -12,8 +12,9 @@ import { summon, create, getSharedProvider, getSharedSigners,
   parseAddr, parseBool, parseInteger, getLogs,
   encode, decode, increaseTime,
   toERC20, toFloat, onChainNow } from "./helper";
-import { getBulksaleAbiArgs, getTokenAbiArgs, sendEther, parameterizedSpecs } from "./scenarioHelper";
+import { getBulksaleAbiArgs, getTokenAbiArgs, sendEther } from "./scenarioHelper";
 import { State } from './parameterizedSpecs';
+import { parameterizedSpecs } from './paramSpecEntrypoint';
 import { Severity, Reporter } from "jest-allure/dist/Reporter";
 import { suite, test } from '@testdeck/jest'
 import fs from 'fs';
@@ -71,6 +72,10 @@ describe("Foundational scenario tests", function() {
 
                 /* `summon()`: Singleton contracts. */
                 const Factory = await summon("Factory", FACTORY_ABI, [foundation.address], foundation);
+                console.log(`\n=============================================\n`);
+                console.log(`Factory.address => ${Factory.address}`);
+                console.log(`\n=============================================\n`);
+
 
 
                 /* `create()`: New token, every time. */
@@ -147,7 +152,7 @@ describe("Foundational scenario tests", function() {
                 try {
                     saleDeployResult = 
                         await ( await Factory.connect(deployer).deploy(templateName, tokenAddr, SELLING_AMOUNT, argsForBulksaleClone) ).wait();
-                } catch (e) { if(!isDebug) console.log(templateName, tokenAddr, SELLING_AMOUNT, argsForBulksaleClone) }
+                } catch (e) { if(isDebug) console.log(templateName, tokenAddr, SELLING_AMOUNT, argsForBulksaleClone) }
                 if(!saleDeployResult) console.log(templateName, tokenAddr, SELLING_AMOUNT, argsForBulksaleClone)
                 let latestBulksaleCloneAddr = saleDeployResult.events[saleDeployResult.events.length-1].args[2];
                 const BulksaleClone = (new ethers.Contract(latestBulksaleCloneAddr, BULKSALEV1_ABI, provider));

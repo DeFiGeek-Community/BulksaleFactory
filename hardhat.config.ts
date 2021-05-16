@@ -8,6 +8,7 @@ import "hardhat-tracer";
 // import "@nomiclabs/hardhat-solpp"; // Error: Cannot find module 'antlr4/index'
 import "@nomiclabs/hardhat-solhint";
 import "hardhat-deploy";
+import "hardhat-deploy-ethers";
 
 
 module.exports = async ({

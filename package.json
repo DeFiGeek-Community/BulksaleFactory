@@ -48,6 +48,7 @@
     "ethers": "^5.0.1",
     "hardhat": "^2.1.1",
     "hardhat-deploy": "^0.7.5",
+    "hardhat-deploy-ethers": "^0.3.0-beta.7",
     "hardhat-jest-plugin": "0.0.3",
     "hardhat-tracer": "^1.0.0-alpha.6",
     "jasmine": "^3.7.0",
@@ -64,7 +65,7 @@
   "scripts": {
     "start": "npx rollup -c && node index.js",
     "test": "hardhat test:jest",
-    "deploy:testnet": "npx hardhat deploy --network rinkeby",
-    "deploy:addTemplate": "npx ts-node scripts/addTemplate.ts"
+    "deploy:testnet": "npx hardhat deploy --network rinkeby && npx hardhat deploy --network rinkeby",
+    "deploy:testnet-half": "npx hardhat deploy --network rinkeby"
   }
 }

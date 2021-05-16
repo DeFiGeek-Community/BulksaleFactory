@@ -6,6 +6,6 @@ test/**/*.js
 allure-results
 artifacts/build-info
 .env
-cache
-.localFactoryAddress
-.upstream*Address
+cache/**/*
+artifacts/**/*.dbg.json
+.embeddedMode

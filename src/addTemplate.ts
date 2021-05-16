@@ -1,44 +1,60 @@
 require('dotenv').config();
-
-import * as ethers from 'ethers';
 import { BigNumber, Wallet, getDefaultProvider, Contract } from 'ethers';
 import { genABI } from './genABI';
+import {
+    setProvider,
+    getFoundation,
+    extractEmbeddedFactoryAddress,
+    recoverFactoryAddress
+} from './deployUtil';
+import { timeout } from "./timeout";
 
 
 
-// const provider = ethers.getDefaultProvider('rinkeby', { alchemy: process.env.ALCHEMY_API_TOKEN });
-const provider = ethers.getDefaultProvider('rinkeby', { infura: process.env.INFURA_API_TOKEN });
-const foundation = new Wallet(process.env.FOUNDATION_PRIVATE_KEY, provider);
+const provider = setProvider({getDefaultProvider})
+const foundation = getFoundation();
 
 
-export async function addTemplate(templateName, factoryAddress, templateAddress){
-    const Factory = (new ethers.Contract(factoryAddress, genABI('Factory'), provider));
-    const Template = (new ethers.Contract(templateAddress, genABI(templateName), provider));
-
+export async function addTemplate(templateName, deployedFactoryAddress, deployedTemplateAddress):Promise<string>{
     /*
-        consistency check
+        1. Instanciate the deployed factory and template.
     */
-    const _embeddedFactoryAddress = await Template.factory();
-    if(_embeddedFactoryAddress !== factoryAddress) throw new Error(`_embeddedFactoryAddress=${_embeddedFactoryAddress} is not equal to factoryAddress=${factoryAddress}`);
+    const Factory = (new Contract(deployedFactoryAddress, genABI('Factory'), provider));
+    const Template = (new Contract(deployedTemplateAddress, genABI(templateName), provider));
 
     /*
-        Finding unique name
+        2. consistency check between the embedded factory addr in the template and the on-chain factory itself.
+    */
+    await timeout(15000);
+    const factoryAddressFromFile = extractEmbeddedFactoryAddress(templateName);
+    if(factoryAddressFromFile !== deployedFactoryAddress) {
+        throw new Error(`factoryAddressFromFile=${factoryAddressFromFile} is not equal to deployedFactoryAddress=${deployedFactoryAddress}`);
+    }
+    const upstreamEmbeddedFactoryAddress = await Template.factory();
+    if(upstreamEmbeddedFactoryAddress !== deployedFactoryAddress) {
+        throw new Error(`upstreamEmbeddedFactoryAddress=${upstreamEmbeddedFactoryAddress} is not equal to deployedFactoryAddress=${deployedFactoryAddress}`);
+    }
+
+    /*
+        3. Finding unique name
     */
     function genName(filename, i){ return `${filename}.${i}.sol` }
     let nonce = 0;
     let name;
     let lookupResult;
-    while(lookupResult == "0x0000000000000000000000000000000000000000" || !lookupResult) {
+    while(lookupResult != "0x0000000000000000000000000000000000000000" || !lookupResult) {
         name = genName(templateName, nonce);
         lookupResult = await Factory.templates(name);
         nonce++;
+        console.log(`${nonce.toString().padStart(3, '0')}th: ${name}`);
     }
 
 
     /*
-        adding
+        4. Register the template to the Factory.
     */
     try {
+        console.log(`"mapping(${name} => ${Template.address})" is being registered to the Factory... (Factory.owner = ${(<Wallet>foundation).address})`);
         await (
             await Factory.connect(foundation)
             .addTemplate(
@@ -48,7 +64,21 @@ export async function addTemplate(templateName, factoryAddress, templateAddress)
         ).wait();
     } catch (e) {
         console.trace(e.message);
+    } finally {
+        /*
+            5. Get back local info.
+        */
+        recoverFactoryAddress(templateName);
+
+
+        /*
+            6. Show result.
+        */
+        console.log(`${name}=${await Factory.templates(name)} is registered to factory=${Factory.address}\n\n`);    
     }
 
-    console.log(name, await Factory.templates(name));    
+    /*
+        Return the key of template;
+    */
+    return name;
 }

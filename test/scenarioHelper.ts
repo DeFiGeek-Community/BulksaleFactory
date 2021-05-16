@@ -3,7 +3,6 @@ import { BigNumber } from "ethers";
 import { summon, getSharedProvider, getSharedSigners, 
   parseAddr, parseBool, parseInteger, getLogs,
   encode, decode, increaseTime } from "./helper";
-import * as specs from './parameterizedSpecs';
 
 
 export function getTokenAbiArgs(templateName, {
@@ -18,7 +17,7 @@ export function getTokenAbiArgs(templateName, {
     owner: string
 }){
     let types;
-    if(templateName == 'OwnableToken.sol'){
+    if(templateName.indexOf('OwnableToken') == 0){
         types = ["uint", "string", "string", "address"]
     } else {
         console.trace(`${templateName} is not planned yet. Add your typedef for abi here.`);
@@ -53,9 +52,9 @@ export function getBulksaleAbiArgs(templateName, {
     feeRatePerMil: number
 }){
     let types;
-    if(templateName == 'BulksaleV1.sol'){
+    if(templateName.indexOf("BulksaleV1") == 0){
         types = ["address", "uint", "uint", "uint", "uint", "uint", "uint", 'address', 'uint'];
-    } else if(templateName == 'BulksaleV2.sol') {
+    } else if(templateName.indexOf("BulksaleV1") == 0) {
         types = ["address", "uint", "uint", "uint", "uint", "uint", "uint", 'address', 'uint'];
     } else if(templateName == 'ERC20CRV.vy') {// for revert test
         types = ["address", "uint", "uint", "uint", "uint", "uint", "uint", 'address', 'uint'];
@@ -84,13 +83,3 @@ export async function sendEther(to:any, amountStr:string, signer){
         value: ethers.utils.parseEther(amountStr)
     })).wait();
 }
-
-let ctx;
-export function parameterizedSpecs(type){
-    ctx = specs.successWithModerateSetting(undefined, type);
-    let specKeys = Object.keys(specs);
-    specKeys.shift(); // remove initial spec as we've called it above
-    specKeys.map(specName=> ctx = specs[specName](ctx, type) ); // run spec with context and override ctx
-    return ctx;
-}
-
