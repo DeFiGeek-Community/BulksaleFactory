@@ -80,7 +80,6 @@ export async function cloneTokenAndSale(factoryAddr:string, tokenTemplateName:st
         4. Approval for deployment.
     */
     const OwnableToken:Contract = (new Contract(tokenAddr, genABI('OwnableToken'), provider)).connect(deployer);
-    console.log(await OwnableToken.balanceOf((<Wallet>deployer).address));
     try {
         let approveTx = await OwnableToken.approve(factoryAddr, SELLING_AMOUNT);
         let approveResult = await approveTx.wait();
