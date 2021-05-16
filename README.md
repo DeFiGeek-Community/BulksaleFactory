@@ -17,6 +17,8 @@
 `npm run deploy:testnet`
 
 ```
+Factory is deployed as 0x2EE46278E7AFbA775000Fd818c02705e84c18795 by 0xdAe503Fd260358b8f344D136160c299530006170
+
 Compiling 2 files with 0.8.3
 Compilation finished successfully
 SampleToken is deployed as 0x53e45c407728f7ae51008F42FEa77Daf1Ab62a54 by 0xD2dd063B77cdB7b2823297a305195128eF2C300c
@@ -41,10 +43,6 @@ deployUtil.recoverFactoryAddress() ... Embedded address is back to 0x5FbDB231567
 [Test] Deploying token clone... {"initialSupply":{"type":"BigNumber","hex":"0x314dc6448d9338c15b0a00000000"},"name":"VeryGoodToken","symbol":"VRG","owner":"0xdAe503Fd260358b8f344D136160c299530006170"}
 Wainting for mining... (17000ms)
 [Test] Token Clone Deployed: OwnableToken.0.sol=0x932D2c5B4Df7618d973d7f13Aa3d956115B2c370
-BigNumber {
-  _hex: '0x314dc6448d9338c15b0a00000000',
-  _isBigNumber: true
-}
 [Test] Deploying sale clone... {"initialSupply":{"type":"BigNumber","hex":"0x314dc6448d9338c15b0a00000000"},"name":"VeryGoodToken","symbol":"VRG","owner":"0xdAe503Fd260358b8f344D136160c299530006170"}
 Wainting for mining... (17000ms)
 [Test] Sale Clone Deployed: BulksaleV1.0.sol=0x785e980BEC067096de1538d3875bcFe537dcc3f2

@@ -86,26 +86,21 @@ contract Factory is ReentrancyGuard {
         emit Deployed(msg.sender, templateName, deployedAddr, abiArgs);
     }
     function deployTokenClone(string memory templateName, bytes memory abiArgs) public returns (address deployedAddr) {
-        console.log("1================ %s", templateName);
 
         /* 1. Args must be non-empty and allowance is enough. */
         require(bytes(templateName).length > 0, "Empty string.");
 
         address templateAddr = templates[templateName];
-        console.log("2================ %s", templateAddr);
 
         require(templateAddr != address(0), "No such template in the list.");
 
         /* 2. Make a clone. */
         deployedAddr = _createClone(templateAddr, abiArgs);
-        console.log("3================ %s", deployedAddr);
 
         /* 3. Initialize it. */
         require(
             ITemplateContract(deployedAddr).initialize(abiArgs)
             , "Failed to initialize the cloned contract.");
-
-        console.log("4================ %s", "initialized");
         
         emit TokenCloneDeployed(msg.sender, templateName, deployedAddr, abiArgs);
     }
