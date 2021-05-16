@@ -1,5 +1,4 @@
-import { BigNumber, Wallet, getDefaultProvider, Contract } from 'ethers';
-import { genABI } from '../src/genABI';
+import { BigNumber, Wallet, Contract } from 'ethers';
 import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
 import {parseEther} from 'ethers/lib/utils';
@@ -32,10 +31,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   if( !isEmbeddedMode() ) return;
   const { ethers } = hre;
   const {
-    getDefaultProvider, getContractFactory,
-    Contract, BigNumber, Signer, getSigners,
+    getContractFactory, Contract, BigNumber, Signer, getSigners,
   } = ethers;
-  setProvider({getDefaultProvider});
+  setProvider();
   const foundation = getFoundation();
   const deployer = getDeployer();
   const factoryAddr = extractEmbeddedFactoryAddress(codename);
@@ -48,7 +46,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     getContractFactory
   });
 
-  let _tokenTemplateKey;
+  let _tokenTemplateKey:string|undefined;
   try {
     _tokenTemplateKey = await addTemplate(
       codename,
@@ -59,9 +57,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     console.trace(e.message);
   }
 
-  const Factory = (new Contract(factoryAddr, genABI('Factory'), singletonProvider()));
-  cloneTokenAndSale(Factory, deployer, _tokenTemplateKey, getSaleTemplateKey());
-  backToInitMode();
+  try {
+    await cloneTokenAndSale(factoryAddr, _tokenTemplateKey);
+  } catch (e) {
+    console.trace(e.message);
+  } finally {
+    backToInitMode();
+  }
 };
 export default func;
 func.tags = [codename];

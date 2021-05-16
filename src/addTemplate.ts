@@ -1,9 +1,11 @@
 require('dotenv').config();
-import { BigNumber, Wallet, getDefaultProvider, Contract } from 'ethers';
+import chalk from 'chalk';
+import { BigNumber, Wallet, Contract } from 'ethers';
 import { genABI } from './genABI';
 import {
     setProvider,
     getFoundation,
+    getDeployer,
     extractEmbeddedFactoryAddress,
     recoverFactoryAddress
 } from './deployUtil';
@@ -11,7 +13,7 @@ import { timeout } from "./timeout";
 
 
 
-const provider = setProvider({getDefaultProvider})
+const provider = setProvider()
 const foundation = getFoundation();
 
 
@@ -25,7 +27,7 @@ export async function addTemplate(templateName, deployedFactoryAddress, deployed
     /*
         2. consistency check between the embedded factory addr in the template and the on-chain factory itself.
     */
-    await timeout(15000);
+    await timeout(17000);
     const factoryAddressFromFile = extractEmbeddedFactoryAddress(templateName);
     if(factoryAddressFromFile !== deployedFactoryAddress) {
         throw new Error(`factoryAddressFromFile=${factoryAddressFromFile} is not equal to deployedFactoryAddress=${deployedFactoryAddress}`);
@@ -74,7 +76,10 @@ export async function addTemplate(templateName, deployedFactoryAddress, deployed
         /*
             6. Show result.
         */
-        console.log(`${name}=${await Factory.templates(name)} is registered to factory=${Factory.address}\n\n`);    
+        console.log(chalk.green.bgBlack.bold(
+            `[Finished] addTemplate :: ${name}=${await Factory.templates(name)} is registered to factory=${Factory.address}\n\n`
+        ));
+
     }
 
     /*

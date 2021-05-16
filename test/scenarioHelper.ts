@@ -5,7 +5,7 @@ import { summon, getSharedProvider, getSharedSigners,
   encode, decode, increaseTime } from "./helper";
 
 
-export function getTokenAbiArgs(templateName, {
+export function getTokenAbiArgs(templateName:string, {
     initialSupply,
     name,
     symbol,
@@ -17,6 +17,7 @@ export function getTokenAbiArgs(templateName, {
     owner: string
 }){
     let types;
+    if(!templateName || templateName.length==0) throw new Error(`scenarioHelper::getTokenAbiArgs() -> templateName is empty.`);
     if(templateName.indexOf('OwnableToken') == 0){
         types = ["uint", "string", "string", "address"]
     } else {
@@ -30,7 +31,7 @@ export function getTokenAbiArgs(templateName, {
 
 }
 
-export function getBulksaleAbiArgs(templateName, {
+export function getBulksaleAbiArgs(templateName:string, {
     token,
     start,
     eventDuration,
@@ -52,6 +53,7 @@ export function getBulksaleAbiArgs(templateName, {
     feeRatePerMil: number
 }){
     let types;
+    if(!templateName || templateName.length==0) throw new Error(`scenarioHelper::getBulksaleAbiArgs() -> templateName is empty.`);
     if(templateName.indexOf("BulksaleV1") == 0){
         types = ["address", "uint", "uint", "uint", "uint", "uint", "uint", 'address', 'uint'];
     } else if(templateName.indexOf("BulksaleV1") == 0) {

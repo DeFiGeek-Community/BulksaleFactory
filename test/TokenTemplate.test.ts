@@ -1,5 +1,6 @@
 const isDebug = false;
 
+import chalk from 'chalk';
 const { ethers } = require("hardhat");
 import { BigNumber } from 'ethers';
 
@@ -72,9 +73,11 @@ describe("Foundational scenario tests", function() {
 
                 /* `summon()`: Singleton contracts. */
                 const Factory = await summon("Factory", FACTORY_ABI, [foundation.address], foundation);
-                console.log(`\n=============================================\n`);
-                console.log(`Factory.address => ${Factory.address}`);
-                console.log(`\n=============================================\n`);
+                console.log(chalk.blue.bgBlack.bold(`
+                \n=============================================\n
+                Factory.address => ${Factory.address}
+                \n=============================================\n
+                `));
 
 
 

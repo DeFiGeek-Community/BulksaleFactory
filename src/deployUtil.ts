@@ -71,7 +71,7 @@ type Options = {
   getContractFactory: any;
 }
 
-export function setProvider({getDefaultProvider}){
+export function setProvider(){
     const provider = getDefaultProvider('rinkeby', {
         etherscan: process.env.ETHERSCAN_API_KEY,
         infura: process.env.INFURA_API_TOKEN,

@@ -8,4 +8,6 @@ artifacts/build-info
 .env
 cache/**/*
 artifacts/**/*.dbg.json
+*.dbg.json
 .embeddedMode
+.saleTemplateName

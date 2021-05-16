@@ -1,18 +1,39 @@
-
-import { Contract, Wallet } from 'ethers';
+import chalk from 'chalk';
+import { Contract, Wallet, utils } from 'ethers';
+const { isAddress, getAddress } = utils;
 import { toERC20, onChainNow } from "../test/helper";
 import { getTokenAbiArgs, getBulksaleAbiArgs } from "../test/scenarioHelper";
 import { timeout } from "./timeout";
+import { genABI } from './genABI';
+import {
+    setProvider,
+    getFoundation,
+    getDeployer,
+    extractEmbeddedFactoryAddress,
+    recoverFactoryAddress,
+    getLocalFactoryAddress
+} from './deployUtil';
+import { readFileSync, writeFileSync, unlinkSync } from 'fs';
 
-let saleTemplateKey;
+const provider = setProvider();
+const saleTemplateName = ".saleTemplateName"
+
 export function setSaleTemplateKey(_saleTemplateKey:string){
-    saleTemplateKey = saleTemplateKey;
+    writeFileSync(saleTemplateName, _saleTemplateKey);
 }
 export function getSaleTemplateKey():string{
-    return saleTemplateKey;
+    return readFileSync(saleTemplateName).toString();
+}
+export function removeSaleTemplateKey(){
+    unlinkSync(saleTemplateName);
 }
 
-export async function cloneTokenAndSale(Factory:Contract, deployer, tokenTemplateName:string, saleTemplateName:string){
+export async function cloneTokenAndSale(factoryAddr:string, tokenTemplateName:string):Promise<void>{
+    const saleTemplateName:string|undefined = getSaleTemplateKey();
+    if(getAddress(getLocalFactoryAddress()) === getAddress(factoryAddr)) throw new Error(`${getLocalFactoryAddress()} is a factory address for the local environment.`);
+    const deployer = getFoundation();
+    const Factory:Contract = (new Contract(factoryAddr, genABI('Factory'), provider)).connect(deployer);
+
     /*
         1. Initial settings.
     */
@@ -41,25 +62,33 @@ export async function cloneTokenAndSale(Factory:Contract, deployer, tokenTemplat
     /*
         3. A token clone deployment.
     */
-    console.log(`Deploying token clone... ${JSON.stringify(tokenOpts)}`);
+    console.log(chalk.blue.bgBlack.bold(`[Test] Deploying token clone... ${JSON.stringify(tokenOpts)}`));
     let tokenCloneDeployResult;
     try {
-        tokenCloneDeployResult = 
-            await (
-                await Factory.connect(deployer)
-                    .deployTokenClone(tokenTemplateName, argsForTokenClone)
-            ).wait();
+        let tx = await Factory.deployTokenClone(tokenTemplateName, argsForTokenClone);
+        tokenCloneDeployResult = await tx.wait();
     } catch (e) { console.trace(e.message) }
-    await timeout(15000);
-    if(!tokenCloneDeployResult) console.trace(tokenTemplateName, argsForTokenClone)
+    await timeout(17000);
+    if(!tokenCloneDeployResult) console.trace(tokenTemplateName, argsForTokenClone);
     let tokenAddr;
     try {
         tokenAddr = tokenCloneDeployResult.events[tokenCloneDeployResult.events.length-1].args[2];
     } catch (e) { console.trace(e.message) }
-    console.log(`Token Clone Deployed: ${tokenTemplateName}=${tokenAddr}`);
+    console.log(chalk.blue.bgBlack.bold(`[Test] Token Clone Deployed: ${tokenTemplateName}=${tokenAddr}`));
 
     /*
-        4. ABI for the sale clone deployment.
+        4. Approval for deployment.
+    */
+    const OwnableToken:Contract = (new Contract(tokenAddr, genABI('OwnableToken'), provider)).connect(deployer);
+    console.log(await OwnableToken.balanceOf((<Wallet>deployer).address));
+    try {
+        let approveTx = await OwnableToken.approve(factoryAddr, SELLING_AMOUNT);
+        let approveResult = await approveTx.wait();
+    } catch (e) { console.trace(e.message) }
+
+
+    /*
+        5. ABI for the sale clone deployment.
     */
     const saleOpts = {
         token: <string>tokenAddr,
@@ -74,10 +103,11 @@ export async function cloneTokenAndSale(Factory:Contract, deployer, tokenTemplat
     };
     const argsForBulksaleClone = getBulksaleAbiArgs(saleTemplateName, saleOpts);
 
+
     /*
-        5. A sale clone deployment.
+        6. A sale clone deployment.
     */
-    console.log(`Deploying sale clone... ${JSON.stringify(tokenOpts)}`);
+    console.log(chalk.blue.bgBlack.bold(`[Test] Deploying sale clone... ${JSON.stringify(tokenOpts)}`));
     let saleDeployResult;
     try {
         saleDeployResult = 
@@ -85,14 +115,13 @@ export async function cloneTokenAndSale(Factory:Contract, deployer, tokenTemplat
                 await Factory.connect(deployer)
                     .deploy(saleTemplateName, tokenAddr, SELLING_AMOUNT, argsForBulksaleClone)
             ).wait();
-    } catch (e) { console.trace(saleTemplateName, tokenAddr, SELLING_AMOUNT, argsForBulksaleClone) }
-    await timeout(15000);
-    if(!saleDeployResult) console.trace(saleTemplateName, tokenAddr, SELLING_AMOUNT, argsForBulksaleClone)
-    let latestBulksaleCloneAddr;
+    } catch (e) { console.trace(e.message) }
+    await timeout(17000);
+    if(!saleDeployResult) console.trace(saleTemplateName, tokenAddr, SELLING_AMOUNT, argsForBulksaleClone);
+    let latestBulksaleCloneAddr:string;
     try {
         latestBulksaleCloneAddr = saleDeployResult.events[saleDeployResult.events.length-1].args[2];
     } catch (e) { console.trace(e.message) }
-    console.log(`Sale Clone Deployed: ${saleTemplateName}=${latestBulksaleCloneAddr}`);
-
-
+    console.log(chalk.blue.bgBlack.bold(`[Test] Sale Clone Deployed: ${saleTemplateName}=${latestBulksaleCloneAddr}`));
+    removeSaleTemplateKey();
 }

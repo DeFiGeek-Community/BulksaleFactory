@@ -22,10 +22,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   if( !isInitMode() ) return;
   const { ethers } = hre;
   const {
-    getDefaultProvider, getContractFactory,
-    Contract, BigNumber, Signer, getSigners,
+    getContractFactory, Contract, BigNumber, Signer, getSigners,
   } = ethers;
-  setProvider({getDefaultProvider});
+  setProvider();
   const foundation = getFoundation();
   const deployer = getDeployer();
 
