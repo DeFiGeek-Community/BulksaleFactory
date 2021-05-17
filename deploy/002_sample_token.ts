@@ -14,7 +14,7 @@ import {
   isInitMode,
   isEmbeddedMode,
   backToInitMode,
-} from '../src/deployUtil';
+} from '@src/deployUtil';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   if( !isEmbeddedMode() ) return;

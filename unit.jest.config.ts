@@ -1,12 +1,14 @@
 
 module.exports = {
+  "name": 'unit',
+  "displayName": 'unittest',
   "moduleFileExtensions": [
     "js", "ts"
   ],
   "testMatch": [
-    "**/test/**/*.test.ts"
+    "**/test/unit/**/*.test.ts"
   ],
-  setupFilesAfterEnv: [
+  "setupFilesAfterEnv": [
     "jest-allure/dist/setup",
     "./jest.setup.js"
   ],

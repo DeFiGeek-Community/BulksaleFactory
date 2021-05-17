@@ -13,7 +13,7 @@ import { summon, create, getSharedProvider, getSharedSigners,
 import { State } from './parameterizedSpecs';
 import { Severity, Reporter } from "jest-allure/dist/Reporter";
 import { suite, test } from '@testdeck/jest';
-import { BalanceLogger } from '../src/BalanceLogger';
+import { BalanceLogger } from '@src/BalanceLogger';
 
 /* TestUtil */
 describe("BalanceLogger", function(){

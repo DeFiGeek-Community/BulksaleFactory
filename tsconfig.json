@@ -16,9 +16,11 @@
     "noImplicitAny": false,
     "esModuleInterop": true,
     "paths": {
+      "@src/*": ["./src/*"],
+      "@test/*": ["./test/*"],
       "*": ["node_modules/*"]
     },
-    "baseUrl": ".",
+    "baseUrl": "./",
     "outDir": "dist",
     "typeRoots" : ["./node_modules/@types"]
   },

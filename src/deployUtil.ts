@@ -11,7 +11,7 @@ import {
   getDefaultProvider,
   Contract
 } from "ethers";
-import { genABI } from './genABI';
+import { genABI } from '@src/genABI';
 const addressExp = /address public constant factory = address\(0x([0-9a-fA-F]{40})\);/;
 const EMBEDDED_MODE_FILE = '.embeddedMode';
 
@@ -51,7 +51,11 @@ export function recoverFactoryAddress(filename){
 }
 export function backToInitMode(){
   const localAddress = getLocalFactoryAddress();
-  unlinkSync(EMBEDDED_MODE_FILE);
+  try {
+    unlinkSync(EMBEDDED_MODE_FILE);
+  } catch (e) {
+    console.trace(e.message);   
+  }
   console.log(`\n${EMBEDDED_MODE_FILE} is deleted. Now this command is initial mode. ${localAddress} is on the contract-hard-coded-value.\n`);
 }
 

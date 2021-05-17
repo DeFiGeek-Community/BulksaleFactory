@@ -1,10 +1,10 @@
 import chalk from 'chalk';
 import { Contract, Wallet, utils } from 'ethers';
 const { isAddress, getAddress } = utils;
-import { toERC20, onChainNow } from "../test/helper";
-import { getTokenAbiArgs, getBulksaleAbiArgs } from "../test/scenarioHelper";
-import { timeout } from "./timeout";
-import { genABI } from './genABI';
+import { toERC20, onChainNow } from "@test/param/helper";
+import { getTokenAbiArgs, getBulksaleAbiArgs } from "@test/param/scenarioHelper";
+import { timeout } from "@src/timeout";
+import { genABI } from '@src/genABI';
 import {
     setProvider,
     getFoundation,
@@ -12,8 +12,10 @@ import {
     extractEmbeddedFactoryAddress,
     recoverFactoryAddress,
     getLocalFactoryAddress
-} from './deployUtil';
+} from '@src/deployUtil';
 import { readFileSync, writeFileSync, unlinkSync } from 'fs';
+import { estimatedBlocktime } from '@src/constants';
+const BLOCKTIME = estimatedBlocktime["rinkeby"].safe;
 
 const provider = setProvider();
 const saleTemplateName = ".saleTemplateName"
@@ -68,7 +70,7 @@ export async function cloneTokenAndSale(factoryAddr:string, tokenTemplateName:st
         let tx = await Factory.deployTokenClone(tokenTemplateName, argsForTokenClone);
         tokenCloneDeployResult = await tx.wait();
     } catch (e) { console.trace(e.message) }
-    await timeout(17000);
+    await timeout(BLOCKTIME);
     if(!tokenCloneDeployResult) console.trace(tokenTemplateName, argsForTokenClone);
     let tokenAddr;
     try {
@@ -115,7 +117,7 @@ export async function cloneTokenAndSale(factoryAddr:string, tokenTemplateName:st
                     .deploy(saleTemplateName, tokenAddr, SELLING_AMOUNT, argsForBulksaleClone)
             ).wait();
     } catch (e) { console.trace(e.message) }
-    await timeout(17000);
+    await timeout(BLOCKTIME);
     if(!saleDeployResult) console.trace(saleTemplateName, tokenAddr, SELLING_AMOUNT, argsForBulksaleClone);
     let latestBulksaleCloneAddr:string;
     try {

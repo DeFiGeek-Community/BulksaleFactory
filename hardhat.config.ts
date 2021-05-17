@@ -1,11 +1,11 @@
 require('dotenv').config();
 
+import 'tsconfig-paths/register';
+
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-web3";
-import "hardhat-jest-plugin";
 import "hardhat-tracer";
-// import "@nomiclabs/hardhat-solpp"; // Error: Cannot find module 'antlr4/index'
 import "@nomiclabs/hardhat-solhint";
 import "hardhat-deploy";
 import "hardhat-deploy-ethers";
@@ -32,7 +32,16 @@ module.exports = async ({
  * @type import('hardhat/config').HardhatUserConfig
  */
 module.exports = {
-  solidity: "0.8.3",
+  solidity: {
+    version: "0.8.3",
+    settings: {
+      outputSelection: {
+        "*": {
+            "*": ["storageLayout"],
+        },
+      },
+    },
+  },
   // defaultNetwork: "goerli",
   networks: {
     hardhat: {

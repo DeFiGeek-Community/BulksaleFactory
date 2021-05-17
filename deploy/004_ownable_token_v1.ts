@@ -15,13 +15,13 @@ import {
   isInitMode,
   isEmbeddedMode,
   backToInitMode,
-} from '../src/deployUtil';
-import { addTemplate } from '../src/addTemplate';
+} from '@src/deployUtil';
+import { addTemplate } from '@src/addTemplate';
 import {
     getSaleTemplateKey,
     setSaleTemplateKey,
     cloneTokenAndSale,
-} from '../src/cloneTester';
+} from '@src/cloneTester';
 
 
 const codename = "OwnableToken";
@@ -62,6 +62,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   } catch (e) {
     console.trace(e.message);
   } finally {
+    recoverFactoryAddress("BulksaleV1");
+    recoverFactoryAddress(codename);
     backToInitMode();
   }
 };

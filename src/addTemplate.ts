@@ -1,15 +1,17 @@
 require('dotenv').config();
 import chalk from 'chalk';
 import { BigNumber, Wallet, Contract } from 'ethers';
-import { genABI } from './genABI';
+import { genABI } from '@src/genABI';
 import {
     setProvider,
     getFoundation,
     getDeployer,
     extractEmbeddedFactoryAddress,
     recoverFactoryAddress
-} from './deployUtil';
-import { timeout } from "./timeout";
+} from '@src/deployUtil';
+import { timeout } from "@src/timeout";
+import { estimatedBlocktime } from '@src/constants';
+const BLOCKTIME = estimatedBlocktime["rinkeby"].standard;
 
 
 
@@ -27,7 +29,7 @@ export async function addTemplate(templateName, deployedFactoryAddress, deployed
     /*
         2. consistency check between the embedded factory addr in the template and the on-chain factory itself.
     */
-    await timeout(17000);
+    await timeout(BLOCKTIME);
     const factoryAddressFromFile = extractEmbeddedFactoryAddress(templateName);
     if(factoryAddressFromFile !== deployedFactoryAddress) {
         throw new Error(`factoryAddressFromFile=${factoryAddressFromFile} is not equal to deployedFactoryAddress=${deployedFactoryAddress}`);
@@ -55,32 +57,16 @@ export async function addTemplate(templateName, deployedFactoryAddress, deployed
     /*
         4. Register the template to the Factory.
     */
-    try {
-        console.log(`"mapping(${name} => ${Template.address})" is being registered to the Factory... (Factory.owner = ${(<Wallet>foundation).address})`);
-        await (
-            await Factory.connect(foundation)
-            .addTemplate(
-                name,
-                Template.address
-            ,{gasLimit: 10000000})
-        ).wait();
-    } catch (e) {
-        console.trace(e.message);
-    } finally {
-        /*
-            5. Get back local info.
-        */
-        recoverFactoryAddress(templateName);
+    console.log(`"mapping(${name} => ${Template.address})" is being registered to the Factory... (Factory.owner = ${(<Wallet>foundation).address})`);
+    let tx = await Factory.connect(foundation).addTemplate(name, Template.address, {gasLimit: 10000000})
+    await tx.wait();
 
-
-        /*
-            6. Show result.
-        */
-        console.log(chalk.green.bgBlack.bold(
-            `[Finished] addTemplate :: ${name}=${await Factory.templates(name)} is registered to factory=${Factory.address}\n\n`
-        ));
-
-    }
+    /*
+        5. Show result.
+    */
+    console.log(chalk.green.bgBlack.bold(
+        `[Finished] addTemplate :: ${name}=${await Factory.templates(name)} is registered to factory=${Factory.address}\n\n`
+    ));
 
     /*
         Return the key of template;

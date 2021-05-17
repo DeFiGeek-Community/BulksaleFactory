@@ -2,7 +2,7 @@ import { BigNumber, Signer, Contract } from 'ethers';
 
 import { toERC20, getSharedSigners, onChainNow } from './helper';
 import { sendEther } from "./scenarioHelper";
-import { BalanceLogger } from '../src/BalanceLogger';
+import { BalanceLogger } from '@src/BalanceLogger';
 
 const betterexpect = (<any>expect); // TODO: better typing for waffleJest
 
