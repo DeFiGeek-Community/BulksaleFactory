@@ -1,18 +1,52 @@
 import { ethers } from 'hardhat'
 import { smockit } from '@eth-optimism/smock'
-import { summon } from '@test/param/helper'
+import { BigNumber } from 'ethers';
 
-// const Factory = await summon('Factory');
+const reporter = (<any>global).reporter;
+const { waffleJest } = require("@ethereum-waffle/jest");
+expect.extend(waffleJest);
+const betterexpect = (<any>expect); // TODO: better typing for waffleJest
+import { summon, create, getSharedProvider, getSharedSigners, 
+  parseAddr, parseBool, parseInteger, getLogs,
+  encode, decode, increaseTime,
+  toERC20, toFloat, onChainNow } from "@test/param/helper";
+import { getBulksaleAbiArgs, getTokenAbiArgs, sendEther } from "@test/param/scenarioHelper";
+import { State } from '@test/param/parameterizedSpecs';
+import { parameterizedSpecs } from '@test/param/paramSpecEntrypoint';
+import { Severity, Reporter } from "jest-allure/dist/Reporter";
+import { suite, test } from '@testdeck/jest'
+import fs from 'fs';
+import { BalanceLogger } from '@src/BalanceLogger';
 
-// const BulksaleV1Factory = await ethers.getContractFactory('BulksaleV1')
-// const BulksaleV1 = await BulksaleV1Factory.deploy(...)
+import { genABI } from '@src/genABI';
 
-// // Smockit!
-// const MyMockContract = await smockit(MyContract)
+const FACTORY_ABI = genABI('Factory');
+const SAMPLE_TOKEN_ABI = genABI('SampleToken');
+const BULKSALEV1_ABI = genABI('BulksaleV1');
 
-// MyMockContract.smocked.myFunction.will.return.with('Some return value!')
 
-// // Assuming that MyOtherContract.myOtherFunction calls MyContract.myFunction.
-// await MyOtherContract.myOtherFunction()
 
-// console.log(MyMockContract.smocked.myFunction.calls.length) // 1
+/* Parameterized Test (Testcases are in /test/parameterizedSpecs.ts) */
+describe("", function() {
+    let provider;
+    it(``, async function() {
+        /* 1. Set test reporter */
+        reporter
+        .description("")
+        .severity(Severity.Critical)
+        // .feature(Feature.Betting)
+        .story("");
+
+        /* 2. Set signed contracts */
+        const [foundation,deployer,alice,bob,carl,david,eve,fin,george] = await getSharedSigners();
+        const signer = foundation;
+        if (!provider) provider = getSharedProvider();
+
+        const Factory = await summon("Factory", FACTORY_ABI, [foundation.address], foundation);
+
+        // const FactoryMock = await smockit(Factory)
+        // FactoryMock.smocked.deploy.will.return.with('');
+        // await FactoryMock.deploy();
+        // betterexpect(FactoryMock.smocked.deploy.calls.length).toEqual(1);
+    });
+});

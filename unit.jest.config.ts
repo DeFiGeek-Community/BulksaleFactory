@@ -8,6 +8,10 @@ module.exports = {
   "testMatch": [
     "**/test/unit/**/*.test.ts"
   ],
+  "moduleNameMapper": {
+    '^@src/(.*)$': '<rootDir>/src/$1',
+    '^@test/(.*)$': '<rootDir>/test/$1'
+  },
   "setupFilesAfterEnv": [
     "jest-allure/dist/setup",
     "./jest.setup.js"

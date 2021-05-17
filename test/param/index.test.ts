@@ -11,10 +11,10 @@ const betterexpect = (<any>expect); // TODO: better typing for waffleJest
 import { summon, create, getSharedProvider, getSharedSigners, 
   parseAddr, parseBool, parseInteger, getLogs,
   encode, decode, increaseTime,
-  toERC20, toFloat, onChainNow } from "./helper";
-import { getBulksaleAbiArgs, getTokenAbiArgs, sendEther } from "./scenarioHelper";
-import { State } from './parameterizedSpecs';
-import { parameterizedSpecs } from './paramSpecEntrypoint';
+  toERC20, toFloat, onChainNow } from "@test/helper";
+import { getBulksaleAbiArgs, getTokenAbiArgs, sendEther } from "@test/scenarioHelper";
+import { State } from '@test/parameterizedSpecs';
+import { parameterizedSpecs } from '@test/paramSpecEntrypoint';
 import { Severity, Reporter } from "jest-allure/dist/Reporter";
 import { suite, test } from '@testdeck/jest'
 import fs from 'fs';
