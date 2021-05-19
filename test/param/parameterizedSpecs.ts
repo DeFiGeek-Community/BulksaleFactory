@@ -279,7 +279,7 @@ export function successWithUpperBound(ctx:Context, type:string):Context{
 
 
 export function failApprovalWithZeroSupply(ctx:Context, type:string):Context{
-    if(type === "Bulksale"){
+    if(type === "BulksaleV1"){
         const title = Object.keys(this)[ctx.paramsSet.length]
         ctx.paramsSet.push({
             only: false,
@@ -333,7 +333,7 @@ export function failApprovalWithZeroSupply(ctx:Context, type:string):Context{
 
 
 export function failDeployWithZeroSupply(ctx:Context, type:string):Context{
-    if(type === "Bulksale"){
+    if(type === "BulksaleV1"){
         const title = Object.keys(this)[ctx.paramsSet.length]
         ctx.paramsSet.push({
             only: false,

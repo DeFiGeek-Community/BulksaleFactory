@@ -1,8 +1,18 @@
 import chalk from 'chalk';
 import { Contract, Wallet, utils } from 'ethers';
-const { isAddress, getAddress } = utils;
+const { isAddress, getAddress, arrayify, hexlify, hexValue } = utils;
+function num2Uint8Array(i:number):Uint8Array{
+    let hex = hexValue(i);
+    if(hex.length%2==1){
+        hex = hex.slice(2, hex.length);
+        hex = hex.padStart(hex.length+1, '0');
+        hex = `0x${hex}`;
+    }
+    return arrayify(hex);
+}
+
 import { toERC20, onChainNow } from "@test/param/helper";
-import { getTokenAbiArgs, getBulksaleAbiArgs } from "@test/param/scenarioHelper";
+import { getTokenAbiArgs, getBulksalePayload } from "@test/param/scenarioHelper";
 import { timeout } from "@src/timeout";
 import { genABI } from '@src/genABI';
 import {
@@ -92,17 +102,17 @@ export async function cloneTokenAndSale(factoryAddr:string, tokenTemplateName:st
         5. ABI for the sale clone deployment.
     */
     const saleOpts = {
-        token: <string>tokenAddr,
-        start: <number>(await onChainNow() + startModification),
-        eventDuration: eventDuration,
-        lockDuration: lockDuration,
-        expirationDuration: expirationDuration,
-        sellingAmount: SELLING_AMOUNT,
-        minEtherTarget: MIN_ETHER_TARGET,
-        owner: (<Wallet>deployer).address,
-        feeRatePerMil: feeRatePerMil,
+        start: num2Uint8Array( Math.ceil((Date.now()/1000-1621397607+startModification) / (60*5) ) ),
+        eventDuration: num2Uint8Array( Math.ceil(eventDuration / (60*60*24)) ),
+        lockDuration: num2Uint8Array( Math.ceil(lockDuration / (60*60*24)) ),
+        expirationDuration: num2Uint8Array( Math.ceil(expirationDuration / (60*60*24)) ),
+        feeRatePerMil: num2Uint8Array(feeRatePerMil),
+        minEtherTarget: arrayify(BigNumber.from(Math.floor(parseFloat(minEtherTarget)*1000)).toHexString()),
+        owner: arrayify(deployer.address),
+        token: arrayify(tokenAddr),
+        sellingAmount: arrayify(BigNumber.from(sellingAmount.match(/([0-9]+)|([0-9]+)\./)[1]).toHexString()),
     };
-    const argsForBulksaleClone = getBulksaleAbiArgs(saleTemplateName, saleOpts);
+    const argsForBulksaleClone = getBulksalePayload(saleTemplateName, saleOpts);
 
 
     /*

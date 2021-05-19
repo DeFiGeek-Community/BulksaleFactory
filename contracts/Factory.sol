@@ -42,7 +42,7 @@ contract Factory is ReentrancyGuard {
     mapping(string => address) public templates;
     address public governance;
     uint nonce = 0;
-    event Deployed(address indexed sender, string indexed templateName, address indexed deployedAddr, bytes abiArgs);
+    event Deployed(address indexed sender, string indexed templateName, address indexed deployedAddr, bytes payload);
     event TokenCloneDeployed(address indexed sender, string indexed templateName, address indexed deployedAddr, bytes abiArgs);
     event TemplateAdded(string indexed templateName, address indexed templateAddr, address indexed governer);
     event GovernanceChanged(address indexed oldGoverner, address indexed newGoverner);
@@ -52,11 +52,11 @@ contract Factory is ReentrancyGuard {
     /*
         External Interfaces
     */
-    function deploy(string memory templateName, address tokenAddr, uint sellingAmount, bytes memory abiArgs) public nonReentrant returns (address deployedAddr) {
+    function deploy(string memory templateName, address token1Addr, uint sellingAmount, bytes memory payload) public nonReentrant returns (address deployedAddr) {
 
         /* 1. Args must be non-empty and allowance is enough. */
         require(bytes(templateName).length > 0, "Empty string.");
-        require(tokenAddr != address(0), "Go with non null address.");
+        require(token1Addr != address(0), "Go with non null address.");
 
         address templateAddr = templates[templateName];
 
@@ -64,26 +64,29 @@ contract Factory is ReentrancyGuard {
 
         require(sellingAmount > 0, "Having an event without tokens are not permitted.");
 
-        uint _allowance = IERC20(tokenAddr).allowance(msg.sender, address(this));
+        uint _allowance = IERC20(token1Addr).allowance(msg.sender, address(this));
         require(_allowance > 0, "You have to approve ERC-20 to deploy.");
         require(_allowance >= sellingAmount, "allowance is not enough.");
 
         /* 2. Make a clone. */
-        deployedAddr = _createClone(templateAddr, abiArgs);
+        console.log("gasleft():%s", gasleft());
+        deployedAddr = _createClone(templateAddr, payload);
 
+        console.log("gasleft():%s", gasleft());
         /* 3. Fund it. */
         require(
-            IERC20(tokenAddr).transferFrom(msg.sender, deployedAddr, sellingAmount)
+            IERC20(token1Addr).transferFrom(msg.sender, deployedAddr, sellingAmount)
             , "TransferFrom failed.");
 
+        console.log("gasleft():%s", gasleft());
 
         /* 4. Initialize it. */
         require(
-            ITemplateContract(deployedAddr).initialize(abiArgs)
+            ITemplateContract(deployedAddr).initialize(payload)
             , "Failed to initialize the cloned contract.");
 
         
-        emit Deployed(msg.sender, templateName, deployedAddr, abiArgs);
+        emit Deployed(msg.sender, templateName, deployedAddr, payload);
     }
     function deployTokenClone(string memory templateName, bytes memory abiArgs) public returns (address deployedAddr) {
 

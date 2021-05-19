@@ -4,3 +4,5 @@ export const estimatedBlocktime = {
         safe: 25000
     }
 }
+
+export const isDebug = !false;

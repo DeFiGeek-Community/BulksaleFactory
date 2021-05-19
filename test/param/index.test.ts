@@ -1,7 +1,18 @@
-const isDebug = !false;
+import { isDebug } from '@src/constants';
 
 const { ethers } = require("hardhat");
-import { BigNumber } from 'ethers';
+import { BigNumber, utils } from 'ethers';
+const { arrayify, hexlify, hexValue } = utils;
+function num2Uint8Array(i:number):Uint8Array{
+    let hex = hexValue(i);
+    if(hex.length%2==1){
+        hex = hex.slice(2, hex.length);
+        hex = hex.padStart(hex.length+1, '0');
+        hex = `0x${hex}`;
+    }
+    return arrayify(hex);
+}
+
 
 const reporter = (<any>global).reporter;
 const { waffleJest } = require("@ethereum-waffle/jest");
@@ -11,10 +22,10 @@ const betterexpect = (<any>expect); // TODO: better typing for waffleJest
 import { summon, create, getSharedProvider, getSharedSigners, 
   parseAddr, parseBool, parseInteger, getLogs,
   encode, decode, increaseTime,
-  toERC20, toFloat, onChainNow } from "@test/helper";
-import { getBulksaleAbiArgs, getTokenAbiArgs, sendEther } from "@test/scenarioHelper";
-import { State } from '@test/parameterizedSpecs';
-import { parameterizedSpecs } from '@test/paramSpecEntrypoint';
+  toERC20, toFloat, onChainNow } from "@test/param/helper";
+import { getBulksalePayload, getTokenAbiArgs, sendEther } from "@test/param/scenarioHelper";
+import { State } from '@test/param/parameterizedSpecs';
+import { parameterizedSpecs } from '@test/param/paramSpecEntrypoint';
 import { Severity, Reporter } from "jest-allure/dist/Reporter";
 import { suite, test } from '@testdeck/jest'
 import fs from 'fs';
@@ -39,7 +50,7 @@ describe("Foundational scenario tests", function() {
         deployerWithdrawalSpecs,
         foundationWithdrawalSpecs,
         endSpecs
-     } = parameterizedSpecs("Bulksale");
+     } = parameterizedSpecs("BulksaleV1");
     let provider;
 
     paramsSet.map(($p,i)=>{
@@ -112,16 +123,16 @@ describe("Foundational scenario tests", function() {
                 /*
                     deployClone
                 */
-                const argsForClone = getBulksaleAbiArgs(templateName, {
-                    token: tokenAddr,
-                    start: await onChainNow() + $p.startModification,
-                    eventDuration: $p.eventDuration,
-                    lockDuration: $p.lockDuration,
-                    expirationDuration: $p.expirationDuration,
-                    sellingAmount: SELLING_AMOUNT,
-                    minEtherTarget: MIN_ETHER_TARGET,
-                    owner: deployer.address,
-                    feeRatePerMil: $p.feeRatePerMil
+                const argsForClone:string = getBulksalePayload(templateName, {
+                    start: num2Uint8Array( Math.ceil((Date.now()/1000-1621397607+$p.startModification) / (60*5) ) ),
+                    eventDuration: num2Uint8Array( Math.ceil($p.eventDuration / (60*60*24)) ),
+                    lockDuration: num2Uint8Array( Math.ceil($p.lockDuration / (60*60*24)) ),
+                    expirationDuration: num2Uint8Array( Math.ceil($p.expirationDuration / (60*60*24)) ),
+                    feeRatePerMil: num2Uint8Array($p.feeRatePerMil),
+                    minEtherTarget: arrayify(BigNumber.from(Math.floor(parseFloat($p.minEtherTarget)*1000)).toHexString()),
+                    owner: arrayify(deployer.address),
+                    token: arrayify(tokenAddr),
+                    sellingAmount: arrayify(BigNumber.from($p.sellingAmount.match(/([0-9]+)|([0-9]+)\./)[1]).toHexString()),
                 });
 
                 await Promise.all(deploySpecs[i].map(async assertion => await assertion(<State>{bl,Factory,BulksaleV1,SampleToken,signer:deployer, args: [templateName, tokenAddr, SELLING_AMOUNT, argsForClone] }) ));

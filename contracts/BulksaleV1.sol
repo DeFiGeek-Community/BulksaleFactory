@@ -39,6 +39,43 @@ contract BulksaleV1 is ITemplateContract, ReentrancyGuard {
 
     address public constant factory = address(0x5FbDB2315678afecb367f032d93F642f64180aa3);
 
+
+    uint private constant posStartingAtOfs = 0;
+    uint private constant posStartingAtLen = 3;
+    // 5min=1fr, 2021-06-01-2180-06-01=FFFFFF
+
+    uint private constant posEventDurationOfs = posStartingAtOfs+posStartingAtLen;
+    uint private constant posEventDurationLen = 1;
+    // 1day=1fr. 1 byte = 256 days
+ 
+    uint private constant posLockDurationOfs = posEventDurationOfs+posEventDurationLen;
+    uint private constant posLockDurationLen = 1;
+    // 1day=1fr. 1 byte = 256 days
+
+    uint private constant posExpirationDurationOfs = posLockDurationOfs+posLockDurationLen;
+    uint private constant posExpirationDurationLen = 1;
+    // 1day=1fr. 1 byte = 256 days
+
+    uint private constant posFeeRatePerMilOfs = posExpirationDurationOfs+posExpirationDurationLen;
+    uint private constant posFeeRatePerMilLen = 1;
+    // 1bytes
+
+    uint private constant posMinimalProvideAmountOfs = posFeeRatePerMilOfs+posFeeRatePerMilLen;
+    uint private constant posMinimalProvideAmountLen = 8;
+    // decimal=3, numeric space is 256^8=1.8*10^18, value range is 0.001~1.8*10^15
+
+    uint private constant posOwnerOfs = posMinimalProvideAmountOfs+posMinimalProvideAmountLen;
+    uint private constant posOwnerLen = 20;
+    // 20 bytes
+
+    uint private constant posProvidingToken1Ofs = posOwnerOfs+posOwnerLen;
+    uint private constant posProvidingToken1Len = 20;
+    // 20 bytes
+
+    uint private constant posTotalDistributeAmountOfProvidingToken1Ofs = posProvidingToken1Ofs+posProvidingToken1Len;
+    uint private constant posTotalDistributeAmountOfProvidingToken1Len = 8;
+    // decimal=0, numeric space is 256^8=1.8*10^18, value range is 0~1.8*10^18
+
     /*
         You can't use constructor
         because the minimal proxy is really minimal.
@@ -52,66 +89,115 @@ contract BulksaleV1 is ITemplateContract, ReentrancyGuard {
 
     */
 
-    /* States in the deployment initialization */
-    uint public startingAt;
-    uint public closingAt;
-    uint public totalDistributeAmount;
-    uint public minimalProvideAmount;
-    uint public lockDuration;
-    uint public expirationDuration;
-    address public owner;
-    uint public feeRatePerMil;
-    IERC20 public erc20onsale;
-    /* States end */
-    
-    struct Args {
-        address token;
-        uint startingAt;
-        uint eventDuration;
-        uint lockDuration;
-        uint expirationDuration;
-        uint totalDistributeAmount;
-        uint minimalProvideAmount;
-        address owner;
-        uint feeRatePerMil;
-    }
-    function initialize(bytes memory abiBytes) public onlyOnce onlyFactory override returns (bool) {
-        Args memory args = abi.decode(abiBytes, (Args));
+    bytes private payload;
+    function initialize(bytes memory _payload) public onlyOnce onlyFactory override returns (bool) {
+        console.log("gasleft():%s", gasleft());
+        payload = _payload;
+        console.log("gasleft():%s", gasleft());
+        console.log("startingAt():%s, eventDuration():%s, expirationDuration():%s", startingAt(), eventDuration(), expirationDuration());
+        console.log("feeRatePerMil():%s", feeRatePerMil());
+        console.log("minimalProvideAmount():%s",minimalProvideAmount());
+        console.log("owner():%s",owner());
+        console.log("providingToken1():%s", providingToken1()); 
+        console.log("totalDistributeAmountOfProvidingToken1():%s", totalDistributeAmountOfProvidingToken1());
 
-        require(block.timestamp <= args.startingAt, "startingAt must be in the future");
-        require(args.eventDuration >= 1 days, "event duration is too short");
-        require(args.totalDistributeAmount > 0, "distribution amount is invalid");
-        require(args.minimalProvideAmount > 0, "minimal provide amount is invalid");
-        require(args.lockDuration >= 0, "lock duration is invalid");
-        require(args.expirationDuration >= 30 days, "expiration duration must be more than 30 days");
-        require(args.owner != address(0), "owner must be there");
-        require(1 <= args.feeRatePerMil && args.feeRatePerMil < 100, "fee rate is out of range");
+        require(block.timestamp <= startingAt(), "startingAt must be in the future");
+        require(eventDuration() >= 1 days, "event duration is too short");
+        require(lockDuration() >= 0, "lock duration is invalid");
+        require(expirationDuration() >= 30 days, "expiration duration must be more than 30 days");
+        require(1 <= feeRatePerMil() && feeRatePerMil() < 100, "fee rate is out of range");
+        require(minimalProvideAmount() > 0, "minimal provide amount is invalid");
+        require(owner() != address(0), "owner must be there");
+        require(providingToken1() != address(0), "token must be there");
+        require(totalDistributeAmountOfProvidingToken1() > 0, "distribution amount is invalid");
 
-        erc20onsale = IERC20(args.token);
-        startingAt = args.startingAt;
-        closingAt = args.startingAt + args.eventDuration;
-        totalDistributeAmount = args.totalDistributeAmount;
-        minimalProvideAmount = args.minimalProvideAmount;
-        lockDuration = args.lockDuration;
-        expirationDuration = args.expirationDuration;
-        owner = args.owner;
-        feeRatePerMil = args.feeRatePerMil;
-        emit Initialized(abiBytes);
         initialized = true;
         return true;
     }
     modifier onlyOnce {
+        console.log("gasleft():%s", gasleft());
         require(!initialized, "This contract has already been initialized");
+        console.log("gasleft():%s", gasleft());
         _;
     }
     modifier onlyFactory {
+        console.log("gasleft():%s", gasleft());
         require(msg.sender == factory, "You are not the Factory.");
+        console.log("gasleft():%s", gasleft());
         _;
     }
     modifier onlyOwner() {
-        require(msg.sender == owner, "You are not the owner.");
+        require(msg.sender == owner(), "You are not the owner.");
         _;
     }
+    function startingAt() public view returns (uint) {
+        return 1621397607 + bytes2uint(slice(payload, posStartingAtOfs, posStartingAtOfs+posStartingAtLen)) * (60 * 5);
+        /* 2021-05-19 13:13:27 + 5min * frames */
+    }
+    function eventDuration() public view returns (uint) {
+        return bytes2uint(slice(payload, posEventDurationOfs, posEventDurationOfs+posEventDurationLen)) * (60 * 60 * 24);
+    }
+    function closingAt() public view returns (uint) {
+        return startingAt() + eventDuration();
+    }
+    function lockDuration() public view returns (uint) {
+        return bytes2uint(slice(payload, posLockDurationOfs, posLockDurationOfs+posLockDurationLen)) * (60 * 60 * 24);
+    }
+    function lockUntil() public view returns (uint) {
+        return closingAt() + lockDuration();
+    }
+    function expirationDuration() public view returns (uint) {
+        return bytes2uint(slice(payload, posExpirationDurationOfs, posExpirationDurationOfs+posExpirationDurationLen)) * (60 * 60 * 24);
+    }
+    function expiredAt() public view returns (uint) {
+        return startingAt() + expirationDuration();
+    }
+    function feeRatePerMil() public view returns (uint) {
+        return bytes2uint(slice(payload, posFeeRatePerMilOfs, posFeeRatePerMilOfs+posFeeRatePerMilLen));
+    }
+    function minimalProvideAmount() public view returns (uint) {
+        return bytes2uint(slice(payload, posMinimalProvideAmountOfs, posMinimalProvideAmountOfs+posMinimalProvideAmountLen)) * (10**18);
+    }
+    function owner() public view returns (address payable) {
+        return payable(bytesToAddress(slice(payload, posOwnerOfs, posOwnerOfs+posOwnerLen)));
+    }
+    function providingToken1() public view returns (address payable) {
+        return payable(bytesToAddress(slice(payload, posProvidingToken1Ofs, posProvidingToken1Ofs+posProvidingToken1Len)));
+    }
+    function totalDistributeAmountOfProvidingToken1() public view returns (uint) {
+        return bytes2uint(slice(payload, posTotalDistributeAmountOfProvidingToken1Ofs, posTotalDistributeAmountOfProvidingToken1Ofs+posTotalDistributeAmountOfProvidingToken1Len)) * (10**18);
+    }
+    function bytes2uint(bytes memory b) private pure returns (uint){
+        uint256 number;
+        for(uint i=0;i<b.length;i++){
+            number = number + uint(uint8(b[i]))*(2**(8*(b.length-(i+1))));
+        }
+        return number;
+    }
+    function slice(bytes storage _bytes, uint startIndex, uint endIndex) private view returns (bytes memory) {
+        bytes memory result = new bytes(endIndex-startIndex);
+        for(uint i = startIndex; i < endIndex; i++) {
+            result[i-startIndex] = _bytes[i];
+        }
+        return result;
+    }
+    function bytesToAddress (bytes memory b) private pure returns (address) {
+        uint160 result = 0;
+        for (uint i = 0; i < b.length; i++) {
+            uint160 c = uint160(uint8(b[i]));
+            if (c >= 48 && c <= 57) {
+                result = result * 16 + (c - 48);
+            }
+            if(c >= 65 && c<= 90) {
+                result = result * 16 + (c - 55);
+            }
+            if(c >= 97 && c<= 122) {
+                result = result * 16 + (c - 87);
+            }
+        }
+        return address(result);
+    }
+
     /*
         ========================================
         === Template Idiom Declarations Ends ===
@@ -133,23 +219,23 @@ contract BulksaleV1 is ITemplateContract, ReentrancyGuard {
     event WithdrawnAfterLockDuration(address indexed sender, uint balance);
 
     receive() external payable {
-        require(startingAt <= block.timestamp, "The offering has not started yet");
-        require(block.timestamp <= closingAt, "The offering has already ended");
+        require(startingAt() <= block.timestamp, "The offering has not started yet");
+        require(block.timestamp <= closingAt(), "The offering has already ended");
         totalProvided += msg.value;
         provided[msg.sender] += msg.value;
         emit Received(msg.sender, msg.value);
     }
 
     function claim(address contributor, address recipient) external nonReentrant {
-        require(block.timestamp > closingAt, "Early to claim. Sale is not finished.");
+        require(block.timestamp > closingAt(), "Early to claim. Sale is not finished.");
         require(provided[contributor] > 0, "You don't have any contribution.");
 
         uint userShare = provided[contributor];
         provided[contributor] = 0;
 
-        uint erc20allocation = _calculateAllocation(userShare, totalProvided, totalDistributeAmount);
-        bool isNotExpiredYet = block.timestamp < startingAt + expirationDuration;
-        bool isTargetReached = totalProvided >= minimalProvideAmount;
+        uint erc20allocation = _calculateAllocation(userShare, totalProvided, totalDistributeAmountOfProvidingToken1());
+        bool isNotExpiredYet = block.timestamp < expiredAt();
+        bool isTargetReached = totalProvided*1000 >= minimalProvideAmount();//MPA is decimal=3
         bool allocationNearlyZero = erc20allocation == 0;
         if(
             isNotExpiredYet && isTargetReached && !allocationNearlyZero
@@ -163,7 +249,7 @@ contract BulksaleV1 is ITemplateContract, ReentrancyGuard {
                 ||
                 /* giving her contribution to someone other by her own will */
                 (msg.sender == contributor && contributor != recipient) ){
-                erc20onsale.transfer(recipient, erc20allocation);
+                IERC20(providingToken1()).transfer(recipient, erc20allocation);
                 emit Claimed(recipient, userShare, erc20allocation);
             } else {
                 revert("sender is claiming someone other's fund for someone other.");
@@ -215,15 +301,15 @@ contract BulksaleV1 is ITemplateContract, ReentrancyGuard {
             Contributors: Can claim and get their own ERC-20
 
         */
-        require(closingAt < block.timestamp, "The offering must be finished first.");
+        require(closingAt() < block.timestamp, "The offering must be finished first.");
         require(
-            totalProvided >= minimalProvideAmount,
+            totalProvided*1000 >= minimalProvideAmount(),
             "The required amount has not been provided!"
         );
 
-        (bool success1,) = payable(owner).call{value: address(this).balance*(1000-feeRatePerMil)/1000}("");
+        (bool success1,) = payable(owner()).call{value: address(this).balance*(1000-feeRatePerMil())/1000}("");
         require(success1,"transfer failed");
-        (bool success2,) = payable(factory).call{value: address(this).balance*feeRatePerMil/1000, gas: 25000}("");
+        (bool success2,) = payable(factory).call{value: address(this).balance*feeRatePerMil()/1000, gas: 25000}("");
         require(success2,"transfer failed");
     }
 
@@ -235,13 +321,13 @@ contract BulksaleV1 is ITemplateContract, ReentrancyGuard {
             Contributors: Claim and get back Ether
 
         */
-        require(closingAt < block.timestamp, "The offering must be completed");
+        require(closingAt() < block.timestamp, "The offering must be completed");
         require(
-            totalProvided < minimalProvideAmount,
+            totalProvided*1000 < minimalProvideAmount(),
             "The required amount has been provided!"
         );
-        uint _balance = erc20onsale.balanceOf(address(this));
-        erc20onsale.transfer(owner, _balance);
+        uint _balance = IERC20(providingToken1()).balanceOf(address(this));
+        IERC20(providingToken1()).transfer(owner(), _balance);
         emit WithdrawnOnFailed(msg.sender, _balance);
     }
 
@@ -253,9 +339,9 @@ contract BulksaleV1 is ITemplateContract, ReentrancyGuard {
             Contributors: Already claimed and getting their own ERC-20
 
         */
-        require(closingAt + lockDuration < block.timestamp, "Withdrawal unavailable yet.");
-        uint _balance = erc20onsale.balanceOf(address(this));
-        erc20onsale.transfer(owner, _balance);
+        require(lockUntil() < block.timestamp, "Withdrawal unavailable yet.");
+        uint _balance = IERC20(providingToken1()).balanceOf(address(this));
+        IERC20(providingToken1()).transfer(owner(), _balance);
         emit WithdrawnAfterLockDuration(msg.sender, _balance);
    }
 }

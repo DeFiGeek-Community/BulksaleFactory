@@ -10,7 +10,7 @@ import { summon, create, getSharedProvider, getSharedSigners,
   parseAddr, parseBool, parseInteger, getLogs,
   encode, decode, increaseTime,
   toERC20, toFloat, onChainNow } from "@test/param/helper";
-import { getBulksaleAbiArgs, getTokenAbiArgs, sendEther } from "@test/param/scenarioHelper";
+import { getBulksalePayload, getTokenAbiArgs, sendEther } from "@test/param/scenarioHelper";
 import { State } from '@test/param/parameterizedSpecs';
 import { parameterizedSpecs } from '@test/param/paramSpecEntrypoint';
 import { Severity, Reporter } from "jest-allure/dist/Reporter";
