@@ -59,7 +59,7 @@ export function getBulksalePayload(templateName:string, {
     owner: Uint8Array, /* in hex framing, 20 byte */
     token: Uint8Array, /* in hex framing, 20 byte */
     sellingAmount: Uint8Array, /* in interger framing, 8 byte */
-}): string {
+}): Array<string> {
     if(!templateName || templateName.length==0) throw new Error(`scenarioHelper::getBulksalePayload() -> templateName is empty.`);
     start =              padUint8Array(start, 3);
     eventDuration =      padUint8Array(eventDuration, 1);
@@ -80,15 +80,12 @@ export function getBulksalePayload(templateName:string, {
         payload = mergeUint8Array(payload, expirationDuration);
         payload = mergeUint8Array(payload, feeRatePerMil);
         payload = mergeUint8Array(payload, minEtherTarget);
-        console.log(hexlify(owner), owner);
-        console.log(hexlify(token), token);
         payload = mergeUint8Array(payload, owner);
-        console.log(hexlify(payload));
         payload = mergeUint8Array(payload, token);
-        console.log(hexlify(payload));
         payload = mergeUint8Array(payload, sellingAmount);
-        console.log(hexlify(payload));
-        return hexlify(payload);
+        let bytes = hexlify(payload);
+        console.log(bytes);
+        return [`0x${bytes.slice(2,66)}`, `0x${padEndBytes32(bytes.slice(66, bytes.length))}`];
     } else {
         console.trace(`${templateName} is not planned yet. Add your typedef for abi here.`);
         throw 1;
@@ -114,6 +111,14 @@ function padUint8Array(arr:Uint8Array, count:number): Uint8Array{
     else {
         const nullArray = new Array(count-arr.byteLength).fill(0);
         return mergeUint8Array(new Uint8Array(nullArray), arr);
+    }
+}
+function padEndBytes32(bytes32str:string): string{
+    if(bytes32str.length > 64) throw new Error(`${bytes32str} is too large as bytes32.`);
+    else if (bytes32str.length === 64) return bytes32str;
+    else {
+        const pad = new Array(64-bytes32str.length).fill(0).join("");
+        return bytes32str+pad;
     }
 }
 

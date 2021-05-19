@@ -37,12 +37,13 @@ import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./ITemplateContract.sol";
+import "./IOptimizedTemplateContract.sol";
 
 contract Factory is ReentrancyGuard {
     mapping(string => address) public templates;
     address public governance;
     uint nonce = 0;
-    event Deployed(address indexed sender, string indexed templateName, address indexed deployedAddr, bytes payload);
+    event Deployed(address indexed sender, string indexed templateName, address indexed deployedAddr, bytes32[2] payloads);
     event TokenCloneDeployed(address indexed sender, string indexed templateName, address indexed deployedAddr, bytes abiArgs);
     event TemplateAdded(string indexed templateName, address indexed templateAddr, address indexed governer);
     event GovernanceChanged(address indexed oldGoverner, address indexed newGoverner);
@@ -52,7 +53,7 @@ contract Factory is ReentrancyGuard {
     /*
         External Interfaces
     */
-    function deploy(string memory templateName, address token1Addr, uint sellingAmount, bytes memory payload) public nonReentrant returns (address deployedAddr) {
+    function deploy(string memory templateName, address token1Addr, uint sellingAmount, bytes32[2] memory payloads) public nonReentrant returns (address deployedAddr) {
 
         /* 1. Args must be non-empty and allowance is enough. */
         require(bytes(templateName).length > 0, "Empty string.");
@@ -70,7 +71,7 @@ contract Factory is ReentrancyGuard {
 
         /* 2. Make a clone. */
         console.log("gasleft():%s", gasleft());
-        deployedAddr = _createClone(templateAddr, payload);
+        deployedAddr = _createClone(templateAddr, concat(payloads[0], payloads[1]));
 
         console.log("gasleft():%s", gasleft());
         /* 3. Fund it. */
@@ -82,11 +83,11 @@ contract Factory is ReentrancyGuard {
 
         /* 4. Initialize it. */
         require(
-            ITemplateContract(deployedAddr).initialize(payload)
+            IOptimizedTemplateContract(deployedAddr).initialize(payloads)
             , "Failed to initialize the cloned contract.");
 
         
-        emit Deployed(msg.sender, templateName, deployedAddr, payload);
+        emit Deployed(msg.sender, templateName, deployedAddr, payloads);
     }
     function deployTokenClone(string memory templateName, bytes memory abiArgs) public returns (address deployedAddr) {
 
@@ -172,5 +173,14 @@ contract Factory is ReentrancyGuard {
             eq(mload(add(clone, 0xd)), mload(add(other, 0xd)))
             )
         }
+    }
+    function concat(bytes32 b1, bytes32 b2) pure public returns (bytes memory)
+    {
+        bytes memory result = new bytes(64);
+        assembly {
+            mstore(add(result, 32), b1)
+            mstore(add(result, 64), b2)
+        }
+        return result;
     }
 }

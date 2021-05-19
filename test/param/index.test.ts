@@ -123,7 +123,7 @@ describe("Foundational scenario tests", function() {
                 /*
                     deployClone
                 */
-                const argsForClone:string = getBulksalePayload(templateName, {
+                const argsForClone:Array<string> = getBulksalePayload(templateName, {
                     start: num2Uint8Array( Math.ceil((Date.now()/1000-1621397607+$p.startModification) / (60*5) ) ),
                     eventDuration: num2Uint8Array( Math.ceil($p.eventDuration / (60*60*24)) ),
                     lockDuration: num2Uint8Array( Math.ceil($p.lockDuration / (60*60*24)) ),

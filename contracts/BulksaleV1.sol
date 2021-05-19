@@ -23,13 +23,14 @@ import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./ITemplateContract.sol";
+import "./IOptimizedTemplateContract.sol";
 
 /**
  * @author 0xMotoko
  * @title BulksaleV1
  * @notice Minimal Proxy Platform-ish fork of the HegicInitialOffering.sol
  */
-contract BulksaleV1 is ITemplateContract, ReentrancyGuard {
+contract BulksaleV1 is IOptimizedTemplateContract, ReentrancyGuard {
     /*
         ==========================================
         === Template Idiom Declarations Begins ===
@@ -89,10 +90,10 @@ contract BulksaleV1 is ITemplateContract, ReentrancyGuard {
 
     */
 
-    bytes private payload;
-    function initialize(bytes memory _payload) public onlyOnce onlyFactory override returns (bool) {
+    bytes32[2] private payloads;
+    function initialize(bytes32[2] memory _payloads) public onlyOnce onlyFactory override returns (bool) {
         console.log("gasleft():%s", gasleft());
-        payload = _payload;
+        payloads = _payloads;
         console.log("gasleft():%s", gasleft());
         console.log("startingAt():%s, eventDuration():%s, expirationDuration():%s", startingAt(), eventDuration(), expirationDuration());
         console.log("feeRatePerMil():%s", feeRatePerMil());
@@ -115,15 +116,11 @@ contract BulksaleV1 is ITemplateContract, ReentrancyGuard {
         return true;
     }
     modifier onlyOnce {
-        console.log("gasleft():%s", gasleft());
         require(!initialized, "This contract has already been initialized");
-        console.log("gasleft():%s", gasleft());
         _;
     }
     modifier onlyFactory {
-        console.log("gasleft():%s", gasleft());
         require(msg.sender == factory, "You are not the Factory.");
-        console.log("gasleft():%s", gasleft());
         _;
     }
     modifier onlyOwner() {
@@ -131,40 +128,49 @@ contract BulksaleV1 is ITemplateContract, ReentrancyGuard {
         _;
     }
     function startingAt() public view returns (uint) {
+        bytes memory payload = concat(payloads[0], payloads[1]);
         return 1621397607 + bytes2uint(slice(payload, posStartingAtOfs, posStartingAtOfs+posStartingAtLen)) * (60 * 5);
         /* 2021-05-19 13:13:27 + 5min * frames */
     }
     function eventDuration() public view returns (uint) {
+        bytes memory payload = concat(payloads[0], payloads[1]);
         return bytes2uint(slice(payload, posEventDurationOfs, posEventDurationOfs+posEventDurationLen)) * (60 * 60 * 24);
     }
     function closingAt() public view returns (uint) {
         return startingAt() + eventDuration();
     }
     function lockDuration() public view returns (uint) {
+        bytes memory payload = concat(payloads[0], payloads[1]);
         return bytes2uint(slice(payload, posLockDurationOfs, posLockDurationOfs+posLockDurationLen)) * (60 * 60 * 24);
     }
     function lockUntil() public view returns (uint) {
         return closingAt() + lockDuration();
     }
     function expirationDuration() public view returns (uint) {
+        bytes memory payload = concat(payloads[0], payloads[1]);
         return bytes2uint(slice(payload, posExpirationDurationOfs, posExpirationDurationOfs+posExpirationDurationLen)) * (60 * 60 * 24);
     }
     function expiredAt() public view returns (uint) {
         return startingAt() + expirationDuration();
     }
     function feeRatePerMil() public view returns (uint) {
+        bytes memory payload = concat(payloads[0], payloads[1]);
         return bytes2uint(slice(payload, posFeeRatePerMilOfs, posFeeRatePerMilOfs+posFeeRatePerMilLen));
     }
     function minimalProvideAmount() public view returns (uint) {
+        bytes memory payload = concat(payloads[0], payloads[1]);
         return bytes2uint(slice(payload, posMinimalProvideAmountOfs, posMinimalProvideAmountOfs+posMinimalProvideAmountLen)) * (10**18);
     }
     function owner() public view returns (address payable) {
+        bytes memory payload = concat(payloads[0], payloads[1]);
         return payable(bytesToAddress(slice(payload, posOwnerOfs, posOwnerOfs+posOwnerLen)));
     }
     function providingToken1() public view returns (address payable) {
+        bytes memory payload = concat(payloads[0], payloads[1]);
         return payable(bytesToAddress(slice(payload, posProvidingToken1Ofs, posProvidingToken1Ofs+posProvidingToken1Len)));
     }
     function totalDistributeAmountOfProvidingToken1() public view returns (uint) {
+        bytes memory payload = concat(payloads[0], payloads[1]);
         return bytes2uint(slice(payload, posTotalDistributeAmountOfProvidingToken1Ofs, posTotalDistributeAmountOfProvidingToken1Ofs+posTotalDistributeAmountOfProvidingToken1Len)) * (10**18);
     }
     function bytes2uint(bytes memory b) private pure returns (uint){
@@ -174,7 +180,7 @@ contract BulksaleV1 is ITemplateContract, ReentrancyGuard {
         }
         return number;
     }
-    function slice(bytes storage _bytes, uint startIndex, uint endIndex) private view returns (bytes memory) {
+    function slice(bytes memory _bytes, uint startIndex, uint endIndex) private view returns (bytes memory) {
         bytes memory result = new bytes(endIndex-startIndex);
         for(uint i = startIndex; i < endIndex; i++) {
             result[i-startIndex] = _bytes[i];
@@ -197,7 +203,15 @@ contract BulksaleV1 is ITemplateContract, ReentrancyGuard {
         }
         return address(result);
     }
-
+    function concat(bytes32 b1, bytes32 b2) pure public returns (bytes memory)
+    {
+        bytes memory result = new bytes(64);
+        assembly {
+            mstore(add(result, 32), b1)
+            mstore(add(result, 64), b2)
+        }
+        return result;
+    }
     /*
         ========================================
         === Template Idiom Declarations Ends ===
