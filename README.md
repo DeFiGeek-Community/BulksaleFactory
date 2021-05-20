@@ -1,5 +1,10 @@
 # Bulksale
 
+## Overview (Use case diagram + Class diagram)
+
+![Overview (Use case diagram + Class diagram)](./bulksale.png)
+
+
 ## Spec
 - Foundation can add a new template contract.
 - Deployer can generate a new clone contract from those template contracts.
