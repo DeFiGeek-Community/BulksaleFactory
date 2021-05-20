@@ -17,11 +17,13 @@ import { Severity, Reporter } from "jest-allure/dist/Reporter";
 import { suite, test } from '@testdeck/jest'
 import fs from 'fs';
 import { BalanceLogger } from '@src/BalanceLogger';
-import { Factory } from '../../typechain'; 
+import { BulksaleDAO, BasicPlugin } from '../../typechain'; 
 
 import { genABI } from '@src/genABI';
 
 const FACTORY_ABI = genABI('Factory');
+const BULKSALEDAO_ABI = genABI('BulksaleDAO');
+const BASICPLUGIN_ABI = genABI('BasicPlugin');
 const SAMPLE_TOKEN_ABI = genABI('SampleToken');
 const BULKSALEV1_ABI = genABI('BulksaleV1');
 
@@ -43,11 +45,17 @@ describe("", function() {
         const signer = foundation;
         if (!provider) provider = getSharedProvider();
 
-        const Factory:Factory = await summon<Factory>("Factory", FACTORY_ABI, [foundation.address], foundation);
 
-        // const FactoryMock = await smockit(Factory)
-        // FactoryMock.smocked.deploy.will.return.with('');
-        // await FactoryMock.deploy();
-        // betterexpect(FactoryMock.smocked.deploy.calls.length).toEqual(1);
+        const unsignedBasicPlugin:BasicPlugin = await summon<BasicPlugin>("BasicPlugin", BASICPLUGIN_ABI, [], foundation);
+        const BasicPlugin:BasicPlugin = unsignedBasicPlugin.connect(signer);
+
+        const unsignedBulksaleDAO:BulksaleDAO = await summon<BulksaleDAO>("BulksaleDAO", BULKSALEDAO_ABI, [BasicPlugin.address], foundation);
+        const BulksaleDAO:BulksaleDAO = unsignedBulksaleDAO.connect(signer);
+
+
+        const BasicPluginMock = await smockit(BasicPlugin)
+        BasicPluginMock.smocked.upgrade.will.return.with(true);
+        await BulksaleDAO.upgrade();
+        betterexpect(BasicPluginMock.smocked.upgrade.calls.length).toEqual(1);
     });
 });

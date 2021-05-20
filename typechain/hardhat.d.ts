@@ -25,6 +25,14 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IERC20__factory>;
     getContractFactory(
+      name: "BasicPlugin",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.BasicPlugin__factory>;
+    getContractFactory(
+      name: "BulksaleDAO",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.BulksaleDAO__factory>;
+    getContractFactory(
       name: "BulksaleV1",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.BulksaleV1__factory>;
@@ -36,6 +44,10 @@ declare module "hardhat/types/runtime" {
       name: "Factory",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Factory__factory>;
+    getContractFactory(
+      name: "IBasicPlugin",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IBasicPlugin__factory>;
     getContractFactory(
       name: "ITemplateContract",
       signerOrOptions?: ethers.Signer | FactoryOptions
