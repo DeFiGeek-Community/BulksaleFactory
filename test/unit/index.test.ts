@@ -17,6 +17,7 @@ import { Severity, Reporter } from "jest-allure/dist/Reporter";
 import { suite, test } from '@testdeck/jest'
 import fs from 'fs';
 import { BalanceLogger } from '@src/BalanceLogger';
+import { Factory } from '../../typechain'; 
 
 import { genABI } from '@src/genABI';
 
@@ -42,7 +43,7 @@ describe("", function() {
         const signer = foundation;
         if (!provider) provider = getSharedProvider();
 
-        const Factory = await summon("Factory", FACTORY_ABI, [foundation.address], foundation);
+        const Factory:Factory = await summon<Factory>("Factory", FACTORY_ABI, [foundation.address], foundation);
 
         // const FactoryMock = await smockit(Factory)
         // FactoryMock.smocked.deploy.will.return.with('');

@@ -9,7 +9,7 @@ import "hardhat-tracer";
 import "@nomiclabs/hardhat-solhint";
 import "hardhat-deploy";
 import "hardhat-deploy-ethers";
-
+import '@typechain/hardhat'
 
 module.exports = async ({
   getNamedAccounts,

@@ -17,19 +17,19 @@ export function getSharedSigners(){
   return signers;
 }
 
-export async function summon(contractName:string, ABI:any, args:Array<any> = [], signer:Signer|undefined=undefined, linkings:Array<string>=[]):Promise<Contract>{
+export async function summon<T=Contract>(contractName:string, ABI:any, args:Array<any> = [], signer:Signer|undefined=undefined, linkings:Array<string>=[]):Promise<T>{
   return await _summon(contractName, ABI, !args ? [] : args, !signer ? undefined : signer, true, linkings);
 }
-export async function libDeploy(contractName:string, signer:Signer|undefined=undefined){
+export async function libDeploy<T=Contract>(contractName:string, signer:Signer|undefined=undefined):Promise<T>{
     const _Factory = await ethers.getContractFactory(contractName, signer);
-    const _Contract:Contract = await _Factory.deploy();
+    const _Contract:T = await _Factory.deploy();
     return _Contract;
 }
-export async function create(contractName:string, ABI:any, args:Array<any> = [], signer:Signer|undefined=undefined, linkings:Array<string>=[]):Promise<Contract>{
+export async function create<T=Contract>(contractName:string, ABI:any, args:Array<any> = [], signer:Signer|undefined=undefined, linkings:Array<string>=[]):Promise<T>{
   return await _summon(contractName, ABI, !args ? [] : args, !signer ? undefined : signer, false, linkings);
 }
 let signedContracts = {};
-export async function _summon(contractName:string, ABI:any, args:Array<any> = [], signer:Signer|undefined=undefined, singleton:boolean=true, linkings:Array<string>):Promise<Contract>{
+export async function _summon<T=Contract>(contractName:string, ABI:any, args:Array<any> = [], signer:Signer|undefined=undefined, singleton:boolean=true, linkings:Array<string>):Promise<T>{
   let result;
   if( singleton && !!signedContracts[contractName] ) {
     result = signedContracts[contractName];
@@ -46,13 +46,13 @@ export async function _summon(contractName:string, ABI:any, args:Array<any> = []
       libraries: libs
     });
 
-    const _Contract:Contract = await _Factory.deploy(...args);
+    const _Contract = await _Factory.deploy(...args);
 
     let provider = getSharedProvider();
 
-    let contract:Contract = new ethers.Contract(_Contract.address, ABI, provider);
+    let contract = new ethers.Contract(_Contract.address, ABI, provider);
 
-    let _signedContract:Contract = contract.connect(<Signer>signer);
+    let _signedContract:T = contract.connect(<Signer>signer);
 
     if(singleton) signedContracts[contractName] = _signedContract; // Don't save if one-time contract.
 

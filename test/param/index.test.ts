@@ -11,16 +11,18 @@ const betterexpect = (<any>expect); // TODO: better typing for waffleJest
 import { summon, create, getSharedProvider, getSharedSigners, 
   parseAddr, parseBool, parseInteger, getLogs,
   encode, decode, increaseTime,
-  toERC20, toFloat, onChainNow } from "@test/helper";
-import { getBulksaleAbiArgs, getTokenAbiArgs, sendEther } from "@test/scenarioHelper";
-import { State } from '@test/parameterizedSpecs';
-import { parameterizedSpecs } from '@test/paramSpecEntrypoint';
+  toERC20, toFloat, onChainNow } from "@test/param/helper";
+import { getBulksaleAbiArgs, getTokenAbiArgs, sendEther } from "@test/param/scenarioHelper";
+import { State } from '@test/param/parameterizedSpecs';
+import { parameterizedSpecs } from '@test/param/paramSpecEntrypoint';
 import { Severity, Reporter } from "jest-allure/dist/Reporter";
 import { suite, test } from '@testdeck/jest'
 import fs from 'fs';
 import { BalanceLogger } from '@src/BalanceLogger';
 
 import { genABI } from '@src/genABI';
+
+import { Factory, BulksaleV1, OwnableToken, SampleToken } from '../../typechain';
 
 const FACTORY_ABI = genABI('Factory');
 const SAMPLE_TOKEN_ABI = genABI('SampleToken');
@@ -71,15 +73,15 @@ describe("Foundational scenario tests", function() {
                 if (!provider) provider = getSharedProvider();
 
                 /* `summon()`: Singleton contracts. */
-                const Factory = await summon("Factory", FACTORY_ABI, [foundation.address], foundation);
+                const Factory:Factory = await summon<Factory>("Factory", FACTORY_ABI, [foundation.address], foundation);
 
                 /* 3. Exec scenario */
 
                 /* Deployment begins */
 
                 /* `create()`: New token, every time. */
-                const SampleToken = await create("SampleToken", SAMPLE_TOKEN_ABI, [TOTAL_ISSUANCE], deployer);
-                const BulksaleV1 = await create("BulksaleV1", BULKSALEV1_ABI, [], foundation);
+                const SampleToken:SampleToken = await create<SampleToken>("SampleToken", SAMPLE_TOKEN_ABI, [TOTAL_ISSUANCE], deployer);
+                const BulksaleV1:BulksaleV1 = await create<BulksaleV1>("BulksaleV1", BULKSALEV1_ABI, [], foundation);
                 const tokenAddr = SampleToken.address;
                 const bulksaleAddr = BulksaleV1.address;
 
@@ -139,7 +141,7 @@ describe("Foundational scenario tests", function() {
                 /* Session begins */
                 let deployResult = await getLogs(Factory, 'Deployed', null);
                 let latestBulksaleCloneAddr = deployResult[deployResult.length-1].args[2];
-                const BulksaleClone = (new ethers.Contract(latestBulksaleCloneAddr, BULKSALEV1_ABI, provider));
+                const BulksaleClone:BulksaleV1 = (new ethers.Contract(latestBulksaleCloneAddr, BULKSALEV1_ABI, provider));
                 bl.setSigner({BulksaleV1:BulksaleClone})
 
 

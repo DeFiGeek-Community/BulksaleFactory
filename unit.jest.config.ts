@@ -9,8 +9,10 @@ module.exports = {
     "**/test/unit/**/*.test.ts"
   ],
   "moduleNameMapper": {
+    '^@root/(.*)$': '<rootDir>/$1',
     '^@src/(.*)$': '<rootDir>/src/$1',
-    '^@test/(.*)$': '<rootDir>/test/$1'
+    '^@test/(.*)$': '<rootDir>/test/$1',
+    '^@typechainTypes/(.*)$': '<rootDir>/typechain/$1',
   },
   "setupFilesAfterEnv": [
     "jest-allure/dist/setup",
